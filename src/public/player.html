@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Soundboard — Player View</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    :root {
+      --bg-deep: #0a0a0f;
+      --bg-panel: #12121a;
+      --bg-card: #1a1a24;
+      --border: #2a2a3a;
+      --text: #e8e6f0;
+      --text-dim: #8a8894;
+      --text-bright: #ffffff;
+      --accent: #9d7cd8;
+      --bgm: #7aa2f7;
+      --ambience: #9ece6a;
+      --sfx: #f7768e;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Crimson Pro', Georgia, serif;
+      background: var(--bg-deep);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    body {
+      background-image: 
+        radial-gradient(ellipse at 50% 0%, rgba(157, 124, 216, 0.1) 0%, transparent 60%),
+        radial-gradient(ellipse at 50% 100%, rgba(122, 162, 247, 0.08) 0%, transparent 60%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .container {
+      max-width: 600px;
+      width: 100%;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .logo {
+      font-family: 'Cinzel', serif;
+      font-size: 2rem;
+      font-weight: 600;
+      color: var(--text-bright);
+      letter-spacing: 0.15em;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      color: var(--text-dim);
+      font-size: 1rem;
+      font-style: italic;
+    }
+
+    .connection-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 1.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 0.85rem;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-dim);
+      animation: pulse 2s infinite;
+    }
+
+    .status-dot.connected { background: var(--ambience); }
+    .status-dot.dm { background: var(--accent); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .channels {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .channel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .channel::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+    }
+
+    .channel.bgm::before { background: var(--bgm); }
+    .channel.ambience::before { background: var(--ambience); }
+
+    .channel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .channel h2 {
+      font-family: 'Cinzel', serif;
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+    }
+
+    .channel.bgm h2 { color: var(--bgm); }
+    .channel.ambience h2 { color: var(--ambience); }
+
+    .status-badge {
+      font-size: 0.7rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .status-badge.playing {
+      background: rgba(157, 124, 216, 0.2);
+      color: var(--accent);
+    }
+
+    .status-badge.stopped {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-dim);
+    }
+
+    .now-playing {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .visualizer {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 30px;
+    }
+
+    .visualizer .bar {
+      width: 4px;
+      background: var(--accent);
+      border-radius: 2px;
+      animation: none;
+    }
+
+    .visualizer.active .bar {
+      animation: bounce 0.5s ease-in-out infinite alternate;
+    }
+
+    .visualizer .bar:nth-child(1) { height: 30%; animation-delay: 0s; }
+    .visualizer .bar:nth-child(2) { height: 60%; animation-delay: 0.1s; }
+    .visualizer .bar:nth-child(3) { height: 100%; animation-delay: 0.2s; }
+    .visualizer .bar:nth-child(4) { height: 50%; animation-delay: 0.3s; }
+    .visualizer .bar:nth-child(5) { height: 80%; animation-delay: 0.15s; }
+
+    @keyframes bounce {
+      0% { transform: scaleY(0.3); }
+      100% { transform: scaleY(1); }
+    }
+
+    .track-name {
+      font-size: 1.1rem;
+      color: var(--text);
+      flex: 1;
+    }
+
+    .track-name.empty {
+      color: var(--text-dim);
+      font-style: italic;
+    }
+
+    .progress-container {
+      margin-bottom: 0.75rem;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 4px;
+      background: var(--bg-card);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.1s linear;
+    }
+
+    .channel.bgm .progress-fill { background: var(--bgm); }
+    .channel.ambience .progress-fill { background: var(--ambience); }
+
+    .time-display {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-top: 0.5rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .volume-display {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--text-dim);
+    }
+
+    .volume-bar {
+      flex: 1;
+      height: 4px;
+      background: var(--bg-card);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .volume-fill {
+      height: 100%;
+      background: var(--text-dim);
+      border-radius: 2px;
+    }
+
+    /* SFX notification */
+    .sfx-notification {
+      position: fixed;
+      top: 2rem;
+      right: 2rem;
+      background: var(--bg-panel);
+      border: 1px solid var(--sfx);
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      color: var(--sfx);
+      font-size: 0.9rem;
+      animation: slideIn 0.3s ease, fadeOut 0.3s ease 1.7s forwards;
+      box-shadow: 0 0 30px rgba(247, 118, 142, 0.2);
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes fadeOut {
+      to { opacity: 0; transform: translateY(-10px); }
+    }
+
+    footer {
+      margin-top: 3rem;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+    }
+
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    /* Waiting state */
+    .waiting {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-dim);
+    }
+
+    .waiting-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">♫ Soundboard</div>
+      <div class="subtitle">Player View</div>
+      <div class="connection-badge">
+        <span class="status-dot" id="connection-status"></span>
+        <span id="connection-text">Connecting...</span>
+      </div>
+    </header>
+
+    <div class="channels">
+      <!-- BGM Channel -->
+      <div class="channel bgm">
+        <div class="channel-header">
+          <h2>Background Music</h2>
+          <span class="status-badge stopped" id="bgm-status">Stopped</span>
+        </div>
+        <div class="now-playing">
+          <div class="visualizer" id="bgm-visualizer">
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+          </div>
+          <span class="track-name empty" id="bgm-track">No track loaded</span>
+        </div>
+        <div class="progress-container">
+          <div class="progress-bar">
+            <div class="progress-fill" id="bgm-progress"></div>
+          </div>
+          <div class="time-display">
+            <span id="bgm-current">0:00</span>
+            <span id="bgm-duration">0:00</span>
+          </div>
+        </div>
+        <div class="volume-display">
+          <span>🔊</span>
+          <div class="volume-bar">
+            <div class="volume-fill" id="bgm-volume" style="width: 50%"></div>
+          </div>
+          <span id="bgm-volume-text">50%</span>
+        </div>
+      </div>
+
+      <!-- Ambience Channel -->
+      <div class="channel ambience">
+        <div class="channel-header">
+          <h2>Ambience</h2>
+          <span class="status-badge stopped" id="ambience-status">Stopped</span>
+        </div>
+        <div class="now-playing">
+          <div class="visualizer" id="ambience-visualizer">
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+          </div>
+          <span class="track-name empty" id="ambience-track">No track loaded</span>
+        </div>
+        <div class="progress-container">
+          <div class="progress-bar">
+            <div class="progress-fill" id="ambience-progress"></div>
+          </div>
+          <div class="time-display">
+            <span id="ambience-current">0:00</span>
+            <span id="ambience-duration">0:00</span>
+          </div>
+        </div>
+        <div class="volume-display">
+          <span>🔊</span>
+          <div class="volume-bar">
+            <div class="volume-fill" id="ambience-volume" style="width: 30%"></div>
+          </div>
+          <span id="ambience-volume-text">30%</span>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p>Controlled by your DM</p>
+    </footer>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    
+    // Audio elements
+    const audio = {
+      bgm: new Audio(),
+      ambience: new Audio()
+    };
+
+    // Connection status
+    socket.on('connect', () => {
+      socket.emit('register', 'player');
+      document.getElementById('connection-status').className = 'status-dot connected';
+      document.getElementById('connection-text').textContent = 'Connected';
+    });
+
+    socket.on('disconnect', () => {
+      document.getElementById('connection-status').className = 'status-dot';
+      document.getElementById('connection-text').textContent = 'Disconnected';
+    });
+
+    // State sync on connect
+    socket.on('state:sync', (state) => {
+      if (state.bgm.track) {
+        loadChannel('bgm', state.bgm);
+      }
+      if (state.ambience.track) {
+        loadChannel('ambience', state.ambience);
+      }
+    });
+
+    function loadChannel(channel, data) {
+      const a = audio[channel];
+      a.src = data.track;
+      a.volume = data.volume;
+      a.loop = data.loop;
+      a.currentTime = data.currentTime || 0;
+      
+      updateTrackInfo(channel, data.name || 'Unknown Track');
+      updateVolume(channel, data.volume);
+      
+      if (data.playing) {
+        a.play().catch(() => {
+          // Autoplay blocked, wait for user interaction
+          document.body.addEventListener('click', () => a.play(), { once: true });
+        });
+        setPlaying(channel, true);
+      }
+      
+      a.ontimeupdate = () => updateProgress(channel);
+      a.onloadedmetadata = () => {
+        document.getElementById(`${channel}-duration`).textContent = formatTime(a.duration);
+      };
+    }
+
+    // BGM events
+    socket.on('bgm:play', (data) => {
+      const a = audio.bgm;
+      if (data.track !== a.src) {
+        a.src = data.track;
+      }
+      a.volume = data.volume || a.volume;
+      a.currentTime = data.currentTime || 0;
+      a.play().catch(() => {});
+      
+      updateTrackInfo('bgm', data.name || 'Unknown Track');
+      setPlaying('bgm', true);
+      
+      a.ontimeupdate = () => updateProgress('bgm');
+      a.onloadedmetadata = () => {
+        document.getElementById('bgm-duration').textContent = formatTime(a.duration);
+      };
+    });
+
+    socket.on('bgm:pause', () => {
+      audio.bgm.pause();
+      setPlaying('bgm', false);
+    });
+
+    socket.on('bgm:stop', () => {
+      audio.bgm.pause();
+      audio.bgm.currentTime = 0;
+      setPlaying('bgm', false);
+      updateTrackInfo('bgm', null);
+      document.getElementById('bgm-progress').style.width = '0%';
+      document.getElementById('bgm-current').textContent = '0:00';
+      document.getElementById('bgm-duration').textContent = '0:00';
+    });
+
+    socket.on('bgm:volume', (vol) => updateVolume('bgm', vol));
+    socket.on('bgm:seek', (time) => audio.bgm.currentTime = time);
+    socket.on('bgm:loop', (loop) => audio.bgm.loop = loop);
+
+    // Ambience events
+    socket.on('ambience:play', (data) => {
+      const a = audio.ambience;
+      if (data.track !== a.src) {
+        a.src = data.track;
+      }
+      a.volume = data.volume || a.volume;
+      a.currentTime = data.currentTime || 0;
+      a.play().catch(() => {});
+      
+      updateTrackInfo('ambience', data.name || 'Unknown Track');
+      setPlaying('ambience', true);
+      
+      a.ontimeupdate = () => updateProgress('ambience');
+      a.onloadedmetadata = () => {
+        document.getElementById('ambience-duration').textContent = formatTime(a.duration);
+      };
+    });
+
+    socket.on('ambience:pause', () => {
+      audio.ambience.pause();
+      setPlaying('ambience', false);
+    });
+
+    socket.on('ambience:stop', () => {
+      audio.ambience.pause();
+      audio.ambience.currentTime = 0;
+      setPlaying('ambience', false);
+      updateTrackInfo('ambience', null);
+      document.getElementById('ambience-progress').style.width = '0%';
+      document.getElementById('ambience-current').textContent = '0:00';
+      document.getElementById('ambience-duration').textContent = '0:00';
+    });
+
+    socket.on('ambience:volume', (vol) => updateVolume('ambience', vol));
+    socket.on('ambience:seek', (time) => audio.ambience.currentTime = time);
+    socket.on('ambience:loop', (loop) => audio.ambience.loop = loop);
+
+    // SFX
+    socket.on('sfx:play', (data) => {
+      const sfx = new Audio(data.url);
+      sfx.play().catch(() => {});
+      showSfxNotification(data.name);
+    });
+
+    // Fade effects
+    socket.on('fade:out', (data) => {
+      const a = audio[data.channel];
+      const startVol = a.volume;
+      const step = startVol / (data.duration / 50);
+      
+      const fade = setInterval(() => {
+        if (a.volume > step) {
+          a.volume -= step;
+          updateVolume(data.channel, a.volume);
+        } else {
+          a.volume = 0;
+          clearInterval(fade);
+          a.pause();
+          setPlaying(data.channel, false);
+        }
+      }, 50);
+    });
+
+    socket.on('fade:in', (data) => {
+      const a = audio[data.channel];
+      a.volume = 0;
+      a.play().catch(() => {});
+      
+      const step = data.targetVol / (data.duration / 50);
+      const fade = setInterval(() => {
+        if (a.volume < data.targetVol - step) {
+          a.volume += step;
+          updateVolume(data.channel, a.volume);
+        } else {
+          a.volume = data.targetVol;
+          clearInterval(fade);
+        }
+      }, 50);
+      
+      setPlaying(data.channel, true);
+    });
+
+    // Master stop
+    socket.on('master:stop', () => {
+      ['bgm', 'ambience'].forEach(ch => {
+        audio[ch].pause();
+        audio[ch].currentTime = 0;
+        setPlaying(ch, false);
+        updateTrackInfo(ch, null);
+        document.getElementById(`${ch}-progress`).style.width = '0%';
+        document.getElementById(`${ch}-current`).textContent = '0:00';
+        document.getElementById(`${ch}-duration`).textContent = '0:00';
+      });
+    });
+
+    // UI helpers
+    function updateTrackInfo(channel, name) {
+      const el = document.getElementById(`${channel}-track`);
+      if (name) {
+        el.textContent = name;
+        el.classList.remove('empty');
+      } else {
+        el.textContent = 'No track loaded';
+        el.classList.add('empty');
+      }
+    }
+
+    function setPlaying(channel, playing) {
+      const status = document.getElementById(`${channel}-status`);
+      const viz = document.getElementById(`${channel}-visualizer`);
+      
+      status.textContent = playing ? 'Playing' : 'Stopped';
+      status.className = 'status-badge ' + (playing ? 'playing' : 'stopped');
+      viz.classList.toggle('active', playing);
+    }
+
+    function updateProgress(channel) {
+      const a = audio[channel];
+      const pct = (a.currentTime / a.duration) * 100 || 0;
+      document.getElementById(`${channel}-progress`).style.width = `${pct}%`;
+      document.getElementById(`${channel}-current`).textContent = formatTime(a.currentTime);
+    }
+
+    function updateVolume(channel, vol) {
+      audio[channel].volume = vol;
+      const pct = Math.round(vol * 100);
+      document.getElementById(`${channel}-volume`).style.width = `${pct}%`;
+      document.getElementById(`${channel}-volume-text`).textContent = `${pct}%`;
+    }
+
+    function formatTime(sec) {
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${m}:${s.toString().padStart(2, '0')}`;
+    }
+
+    function showSfxNotification(name) {
+      const notif = document.createElement('div');
+      notif.className = 'sfx-notification';
+      notif.textContent = `🔔 ${name}`;
+      document.body.appendChild(notif);
+      setTimeout(() => notif.remove(), 2000);
+    }
+  </script>
+</body>
+</html>

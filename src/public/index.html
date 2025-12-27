@@ -1,0 +1,1367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Soundboard — DM Control</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    :root {
+      --bg-deep: #0a0a0f;
+      --bg-panel: #12121a;
+      --bg-card: #1a1a24;
+      --bg-hover: #242430;
+      --border: #2a2a3a;
+      --border-glow: #4a3f6b;
+      --text: #e8e6f0;
+      --text-dim: #8a8894;
+      --text-bright: #ffffff;
+      --accent: #9d7cd8;
+      --accent-dim: #6b5a96;
+      --bgm: #7aa2f7;
+      --ambience: #9ece6a;
+      --sfx: #f7768e;
+      --gold: #e0af68;
+      --shadow: rgba(0, 0, 0, 0.5);
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Crimson Pro', Georgia, serif;
+      background: var(--bg-deep);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    body {
+      background-image: 
+        radial-gradient(ellipse at 20% 0%, rgba(157, 124, 216, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 100%, rgba(122, 162, 247, 0.06) 0%, transparent 50%);
+      min-height: 100vh;
+    }
+
+    /* Header */
+    header {
+      background: linear-gradient(180deg, var(--bg-panel) 0%, transparent 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 1.25rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+    }
+
+    .logo {
+      font-family: 'Cinzel', serif;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--text-bright);
+      letter-spacing: 0.1em;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .logo::before {
+      content: '♫';
+      color: var(--accent);
+    }
+
+    .connection-status {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      font-size: 0.9rem;
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-dim);
+      animation: pulse 2s infinite;
+    }
+
+    .status-dot.connected { background: var(--ambience); }
+    .status-dot.dm { background: var(--accent); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* Main Layout */
+    main {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 1px;
+      background: var(--border);
+      min-height: calc(100vh - 70px);
+    }
+
+    /* Sidebar - Track Library */
+    .sidebar {
+      background: var(--bg-panel);
+      padding: 1.5rem;
+      overflow-y: auto;
+      max-height: calc(100vh - 70px);
+    }
+
+    .sidebar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .sidebar h2 {
+      font-family: 'Cinzel', serif;
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .upload-btn {
+      background: var(--bg-card);
+      border: 1px dashed var(--border);
+      color: var(--text-dim);
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+    }
+
+    .upload-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .search-box {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.95rem;
+      margin-bottom: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-box:focus {
+      border-color: var(--accent-dim);
+    }
+
+    .search-box::placeholder {
+      color: var(--text-dim);
+    }
+
+    .track-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .track-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.875rem 1rem;
+      cursor: grab;
+      transition: all 0.2s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .track-item:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-glow);
+      transform: translateX(4px);
+    }
+
+    .track-item.dragging {
+      opacity: 0.5;
+      cursor: grabbing;
+    }
+
+    .track-name {
+      font-size: 0.95rem;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+    }
+
+    .track-actions {
+      display: flex;
+      gap: 0.25rem;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .track-item:hover .track-actions {
+      opacity: 1;
+    }
+
+    .track-btn {
+      width: 28px;
+      height: 28px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .track-btn.bgm { background: rgba(122, 162, 247, 0.2); color: var(--bgm); }
+    .track-btn.amb { background: rgba(158, 206, 106, 0.2); color: var(--ambience); }
+    .track-btn.sfx { background: rgba(247, 118, 142, 0.2); color: var(--sfx); }
+    .track-btn.del { background: rgba(255, 255, 255, 0.05); color: var(--text-dim); }
+
+    .track-btn:hover {
+      transform: scale(1.1);
+      filter: brightness(1.2);
+    }
+
+    /* Control Panels */
+    .control-area {
+      background: var(--bg-deep);
+      padding: 2rem;
+      overflow-y: auto;
+    }
+
+    .panels {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 1.5rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .panel::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      border-radius: 12px 12px 0 0;
+    }
+
+    .panel.bgm::before { background: var(--bgm); }
+    .panel.ambience::before { background: var(--ambience); }
+    .panel.sfx::before { background: var(--sfx); }
+    .panel.master::before { background: linear-gradient(90deg, var(--bgm), var(--ambience), var(--sfx)); }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .panel h3 {
+      font-family: 'Cinzel', serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+    }
+
+    .panel.bgm h3 { color: var(--bgm); }
+    .panel.ambience h3 { color: var(--ambience); }
+    .panel.sfx h3 { color: var(--sfx); }
+    .panel.master h3 { color: var(--gold); }
+
+    .panel-badge {
+      font-size: 0.7rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    /* Drop Zone */
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 2rem;
+      text-align: center;
+      color: var(--text-dim);
+      transition: all 0.2s;
+      margin-bottom: 1rem;
+      min-height: 100px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .drop-zone.active {
+      border-color: var(--accent);
+      background: rgba(157, 124, 216, 0.1);
+    }
+
+    .drop-zone.has-track {
+      border-style: solid;
+      padding: 1rem;
+    }
+
+    .drop-zone .track-info {
+      font-size: 1.1rem;
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .drop-zone .icon {
+      font-size: 1.5rem;
+      opacity: 0.5;
+    }
+
+    /* Transport Controls */
+    .transport {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .transport-btn {
+      width: 44px;
+      height: 44px;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      background: var(--bg-card);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .transport-btn:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-glow);
+      transform: scale(1.05);
+    }
+
+    .transport-btn.play {
+      width: 52px;
+      height: 52px;
+      font-size: 1.25rem;
+    }
+
+    .transport-btn.playing {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--bg-deep);
+    }
+
+    /* Progress Bar */
+    .progress-container {
+      margin-bottom: 1rem;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: var(--bg-card);
+      border-radius: 3px;
+      cursor: pointer;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 3px;
+      width: 0%;
+      transition: width 0.1s linear;
+    }
+
+    .time-display {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      margin-top: 0.5rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Volume Slider */
+    .volume-control {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .volume-icon {
+      color: var(--text-dim);
+      font-size: 1rem;
+    }
+
+    .volume-slider {
+      flex: 1;
+      height: 6px;
+      background: var(--bg-card);
+      border-radius: 3px;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .volume-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      background: var(--text);
+      border-radius: 50%;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+
+    .volume-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    .volume-value {
+      width: 40px;
+      text-align: right;
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Toggle */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .toggle-label {
+      font-size: 0.9rem;
+      color: var(--text-dim);
+    }
+
+    .toggle {
+      width: 44px;
+      height: 24px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s;
+    }
+
+    .toggle.active {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .toggle::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 16px;
+      height: 16px;
+      background: var(--text);
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+
+    .toggle.active::after {
+      transform: translateX(20px);
+      background: var(--bg-deep);
+    }
+
+    /* SFX Grid */
+    .sfx-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .sfx-pad {
+      aspect-ratio: 1;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.5rem;
+      transition: all 0.15s;
+      text-align: center;
+    }
+
+    .sfx-pad:hover {
+      background: var(--bg-hover);
+      border-color: var(--sfx);
+      transform: scale(1.02);
+    }
+
+    .sfx-pad:active {
+      transform: scale(0.98);
+      background: rgba(247, 118, 142, 0.2);
+    }
+
+    .sfx-pad.playing {
+      background: rgba(247, 118, 142, 0.3);
+      border-color: var(--sfx);
+      box-shadow: 0 0 20px rgba(247, 118, 142, 0.3);
+    }
+
+    .sfx-pad .icon {
+      font-size: 1.5rem;
+    }
+
+    .sfx-pad .name {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      width: 100%;
+    }
+
+    .sfx-empty {
+      border-style: dashed;
+      color: var(--text-dim);
+      font-size: 0.8rem;
+    }
+
+    /* Master Panel */
+    .master-controls {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+
+    .master-btn {
+      padding: 1rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-card);
+      color: var(--text);
+      font-family: 'Cinzel', serif;
+      font-size: 0.9rem;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .master-btn:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-glow);
+    }
+
+    .master-btn.danger {
+      border-color: rgba(247, 118, 142, 0.3);
+    }
+
+    .master-btn.danger:hover {
+      background: rgba(247, 118, 142, 0.2);
+      border-color: var(--sfx);
+    }
+
+    /* Hidden file input */
+    #file-upload {
+      display: none;
+    }
+
+    /* Fade controls */
+    .fade-controls {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    .fade-btn {
+      flex: 1;
+      padding: 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg-card);
+      color: var(--text-dim);
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .fade-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text);
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-deep);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--border-glow);
+    }
+
+    /* Toast notifications */
+    .toast-container {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .toast {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.5rem;
+      color: var(--text);
+      font-size: 0.9rem;
+      animation: slideIn 0.3s ease;
+      box-shadow: 0 4px 20px var(--shadow);
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* Category Tabs */
+    .category-tabs {
+      display: flex;
+      gap: 0.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .category-tab {
+      flex: 1;
+      padding: 0.5rem;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-dim);
+      font-size: 0.75rem;
+      font-family: 'Cinzel', serif;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .category-tab:first-child { border-radius: 6px 0 0 6px; }
+    .category-tab:last-child { border-radius: 0 6px 6px 0; }
+
+    .category-tab:hover { background: var(--bg-hover); }
+
+    .category-tab.active {
+      color: var(--text-bright);
+      border-color: var(--border-glow);
+    }
+
+    .category-tab.active.bgm { background: rgba(122, 162, 247, 0.2); border-color: var(--bgm); }
+    .category-tab.active.ambience { background: rgba(158, 206, 106, 0.2); border-color: var(--ambience); }
+    .category-tab.active.sfx { background: rgba(247, 118, 142, 0.2); border-color: var(--sfx); }
+
+    .category-badge {
+      display: inline-block;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.65rem;
+      margin-left: 0.5rem;
+      vertical-align: middle;
+    }
+
+    .category-badge.bgm { background: rgba(122, 162, 247, 0.3); color: var(--bgm); }
+    .category-badge.ambience { background: rgba(158, 206, 106, 0.3); color: var(--ambience); }
+    .category-badge.sfx { background: rgba(247, 118, 142, 0.3); color: var(--sfx); }
+
+    /* Upload Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+    }
+
+    .modal-overlay.active { display: flex; }
+
+    .modal {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      max-width: 500px;
+      width: 90%;
+    }
+
+    .modal h3 {
+      font-family: 'Cinzel', serif;
+      font-size: 1.25rem;
+      margin-bottom: 1.5rem;
+      color: var(--text-bright);
+    }
+
+    .upload-options {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .upload-option {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .upload-option:hover {
+      background: var(--bg-hover);
+    }
+
+    .upload-option.bgm:hover { border-color: var(--bgm); }
+    .upload-option.ambience:hover { border-color: var(--ambience); }
+    .upload-option.sfx:hover { border-color: var(--sfx); }
+
+    .upload-option-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+    }
+
+    .upload-option.bgm .upload-option-icon { background: rgba(122, 162, 247, 0.2); }
+    .upload-option.ambience .upload-option-icon { background: rgba(158, 206, 106, 0.2); }
+    .upload-option.sfx .upload-option-icon { background: rgba(247, 118, 142, 0.2); }
+
+    .upload-option-info { flex: 1; }
+    .upload-option-title { font-weight: 600; color: var(--text); }
+    .upload-option-limit { font-size: 0.8rem; color: var(--text-dim); }
+
+    .modal-close {
+      margin-top: 1.5rem;
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg-card);
+      color: var(--text);
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    .modal-close:hover {
+      background: var(--bg-hover);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">Soundboard</div>
+    <div class="connection-status">
+      <div class="status-item">
+        <span class="status-dot dm connected"></span>
+        <span>DM Connected</span>
+      </div>
+      <div class="status-item">
+        <span class="status-dot" id="player-status"></span>
+        <span id="player-count">0 Players</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>Library</h2>
+        <button class="upload-btn" onclick="openUploadModal()">+ Upload</button>
+      </div>
+      <div class="category-tabs">
+        <button class="category-tab bgm active" onclick="setCategory('bgm')">BGM</button>
+        <button class="category-tab ambience" onclick="setCategory('ambience')">AMB</button>
+        <button class="category-tab sfx" onclick="setCategory('sfx')">SFX</button>
+      </div>
+      <input type="text" class="search-box" placeholder="Search tracks..." id="search-input">
+      <div class="track-list" id="track-list"></div>
+    </aside>
+
+    <!-- Upload Modal -->
+    <div class="modal-overlay" id="upload-modal">
+      <div class="modal">
+        <h3>Upload Audio Files</h3>
+        <div class="upload-options">
+          <div class="upload-option bgm" onclick="triggerUpload('bgm')">
+            <div class="upload-option-icon">🎵</div>
+            <div class="upload-option-info">
+              <div class="upload-option-title">Background Music</div>
+              <div class="upload-option-limit">Max 500MB per file</div>
+            </div>
+          </div>
+          <div class="upload-option ambience" onclick="triggerUpload('ambience')">
+            <div class="upload-option-icon">🌲</div>
+            <div class="upload-option-info">
+              <div class="upload-option-title">Ambience</div>
+              <div class="upload-option-limit">Max 500MB per file</div>
+            </div>
+          </div>
+          <div class="upload-option sfx" onclick="triggerUpload('sfx')">
+            <div class="upload-option-icon">🔔</div>
+            <div class="upload-option-info">
+              <div class="upload-option-title">Sound Effects</div>
+              <div class="upload-option-limit">Max 10MB per file</div>
+            </div>
+          </div>
+        </div>
+        <button class="modal-close" onclick="closeUploadModal()">Cancel</button>
+      </div>
+    </div>
+    <input type="file" id="file-upload" multiple accept=".mp3,.wav,.ogg,.m4a,.flac,.webm" style="display:none">
+
+    <section class="control-area">
+      <div class="panels">
+        <!-- BGM Panel -->
+        <div class="panel bgm">
+          <div class="panel-header">
+            <h3>Background Music</h3>
+            <span class="panel-badge">Looping</span>
+          </div>
+          <div class="drop-zone" id="bgm-drop" data-channel="bgm">
+            <span class="icon">🎵</span>
+            <span>Drop track here or click from library</span>
+          </div>
+          <div class="transport" id="bgm-transport" style="display: none;">
+            <button class="transport-btn" onclick="seekBackward('bgm')">⏪</button>
+            <button class="transport-btn play" id="bgm-play-btn" onclick="togglePlay('bgm')">▶</button>
+            <button class="transport-btn" onclick="seekForward('bgm')">⏩</button>
+            <button class="transport-btn" onclick="stopChannel('bgm')">⏹</button>
+          </div>
+          <div class="progress-container" id="bgm-progress-container" style="display: none;">
+            <div class="progress-bar" onclick="seekTo(event, 'bgm')">
+              <div class="progress-fill" id="bgm-progress"></div>
+            </div>
+            <div class="time-display">
+              <span id="bgm-current">0:00</span>
+              <span id="bgm-duration">0:00</span>
+            </div>
+          </div>
+          <div class="volume-control">
+            <span class="volume-icon">🔊</span>
+            <input type="range" class="volume-slider" id="bgm-volume" min="0" max="100" value="50" oninput="setVolume('bgm', this.value)">
+            <span class="volume-value" id="bgm-volume-val">50%</span>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">Loop</span>
+            <div class="toggle active" id="bgm-loop" onclick="toggleLoop('bgm')"></div>
+          </div>
+          <div class="fade-controls">
+            <button class="fade-btn" onclick="fadeOut('bgm')">Fade Out</button>
+            <button class="fade-btn" onclick="fadeIn('bgm')">Fade In</button>
+          </div>
+        </div>
+
+        <!-- Ambience Panel -->
+        <div class="panel ambience">
+          <div class="panel-header">
+            <h3>Ambience</h3>
+            <span class="panel-badge">Atmospheric</span>
+          </div>
+          <div class="drop-zone" id="ambience-drop" data-channel="ambience">
+            <span class="icon">🌲</span>
+            <span>Drop track here or click from library</span>
+          </div>
+          <div class="transport" id="ambience-transport" style="display: none;">
+            <button class="transport-btn" onclick="seekBackward('ambience')">⏪</button>
+            <button class="transport-btn play" id="ambience-play-btn" onclick="togglePlay('ambience')">▶</button>
+            <button class="transport-btn" onclick="seekForward('ambience')">⏩</button>
+            <button class="transport-btn" onclick="stopChannel('ambience')">⏹</button>
+          </div>
+          <div class="progress-container" id="ambience-progress-container" style="display: none;">
+            <div class="progress-bar" onclick="seekTo(event, 'ambience')">
+              <div class="progress-fill" id="ambience-progress"></div>
+            </div>
+            <div class="time-display">
+              <span id="ambience-current">0:00</span>
+              <span id="ambience-duration">0:00</span>
+            </div>
+          </div>
+          <div class="volume-control">
+            <span class="volume-icon">🔊</span>
+            <input type="range" class="volume-slider" id="ambience-volume" min="0" max="100" value="30" oninput="setVolume('ambience', this.value)">
+            <span class="volume-value" id="ambience-volume-val">30%</span>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">Loop</span>
+            <div class="toggle active" id="ambience-loop" onclick="toggleLoop('ambience')"></div>
+          </div>
+          <div class="fade-controls">
+            <button class="fade-btn" onclick="fadeOut('ambience')">Fade Out</button>
+            <button class="fade-btn" onclick="fadeIn('ambience')">Fade In</button>
+          </div>
+        </div>
+
+        <!-- SFX Panel -->
+        <div class="panel sfx">
+          <div class="panel-header">
+            <h3>Sound Effects</h3>
+            <span class="panel-badge">One-Shot</span>
+          </div>
+          <div class="sfx-grid" id="sfx-grid">
+            <!-- SFX pads populated by JS -->
+          </div>
+        </div>
+
+        <!-- Master Panel -->
+        <div class="panel master">
+          <div class="panel-header">
+            <h3>Master Controls</h3>
+            <span class="panel-badge">Global</span>
+          </div>
+          <div class="master-controls">
+            <button class="master-btn" onclick="fadeOutAll()">Fade All Out</button>
+            <button class="master-btn" onclick="fadeInAll()">Fade All In</button>
+            <button class="master-btn danger" onclick="stopAll()">Stop All</button>
+            <button class="master-btn" onclick="refreshTracks()">Refresh Library</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    
+    // Audio elements
+    const audioElements = {
+      bgm: new Audio(),
+      ambience: new Audio()
+    };
+    
+    // Track data - now organized by category
+    let tracks = { bgm: [], ambience: [], sfx: [] };
+    let currentCategory = 'bgm';
+    let uploadCategory = null;
+    
+    // Initialize
+    socket.on('connect', () => {
+      socket.emit('register', 'dm');
+      showToast('Connected to server');
+    });
+
+    socket.on('clients:update', (data) => {
+      const status = document.getElementById('player-status');
+      const count = document.getElementById('player-count');
+      status.className = 'status-dot' + (data.players > 0 ? ' connected' : '');
+      count.textContent = `${data.players} Player${data.players !== 1 ? 's' : ''}`;
+    });
+
+    socket.on('tracks:updated', () => loadTracks());
+
+    // Load tracks
+    async function loadTracks() {
+      try {
+        const res = await fetch('/api/tracks');
+        tracks = await res.json();
+        renderTracks();
+        renderSfxPads();
+      } catch (err) {
+        showToast('Failed to load tracks');
+      }
+    }
+
+    function setCategory(category) {
+      currentCategory = category;
+      document.querySelectorAll('.category-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.classList.contains(category));
+      });
+      renderTracks();
+    }
+
+    function renderTracks() {
+      const list = document.getElementById('track-list');
+      const search = document.getElementById('search-input').value.toLowerCase();
+      const categoryTracks = tracks[currentCategory] || [];
+      const filtered = categoryTracks.filter(t => t.name.toLowerCase().includes(search));
+      
+      list.innerHTML = filtered.map(t => `
+        <div class="track-item" draggable="true" data-url="${t.url}" data-name="${t.name}" data-category="${t.category}">
+          <span class="track-name">${t.name}</span>
+          <div class="track-actions">
+            <button class="track-btn bgm" onclick="loadToChannel('bgm', '${t.url}', '${t.name}')" title="BGM">B</button>
+            <button class="track-btn amb" onclick="loadToChannel('ambience', '${t.url}', '${t.name}')" title="Ambience">A</button>
+            <button class="track-btn sfx" onclick="playSfx('${t.url}', '${t.name}')" title="SFX">S</button>
+            <button class="track-btn del" onclick="deleteTrack('${t.category}', '${t.filename}')" title="Delete">×</button>
+          </div>
+        </div>
+      `).join('');
+
+      // Setup drag events
+      list.querySelectorAll('.track-item').forEach(item => {
+        item.addEventListener('dragstart', (e) => {
+          e.dataTransfer.setData('text/plain', JSON.stringify({
+            url: item.dataset.url,
+            name: item.dataset.name
+          }));
+          item.classList.add('dragging');
+        });
+        item.addEventListener('dragend', () => item.classList.remove('dragging'));
+      });
+    }
+
+    function renderSfxPads() {
+      const grid = document.getElementById('sfx-grid');
+      const sfxTracks = tracks.sfx || [];
+      const pads = sfxTracks.slice(0, 12).map(t => `
+        <div class="sfx-pad" onclick="playSfx('${t.url}', '${t.name}')">
+          <span class="icon">🔔</span>
+          <span class="name">${t.name}</span>
+        </div>
+      `);
+      
+      while (pads.length < 12) {
+        pads.push('<div class="sfx-pad sfx-empty">Empty</div>');
+      }
+      
+      grid.innerHTML = pads.join('');
+    }
+
+    // Drop zones
+    document.querySelectorAll('.drop-zone').forEach(zone => {
+      zone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        zone.classList.add('active');
+      });
+      
+      zone.addEventListener('dragleave', () => zone.classList.remove('active'));
+      
+      zone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        zone.classList.remove('active');
+        const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+        loadToChannel(zone.dataset.channel, data.url, data.name);
+      });
+    });
+
+    // Channel controls
+    function loadToChannel(channel, url, name) {
+      const audio = audioElements[channel];
+      const drop = document.getElementById(`${channel}-drop`);
+      const transport = document.getElementById(`${channel}-transport`);
+      const progress = document.getElementById(`${channel}-progress-container`);
+      
+      audio.src = url;
+      audio.loop = document.getElementById(`${channel}-loop`).classList.contains('active');
+      audio.volume = parseInt(document.getElementById(`${channel}-volume`).value) / 100;
+      
+      drop.innerHTML = `<span class="track-info">${name}</span>`;
+      drop.classList.add('has-track');
+      transport.style.display = 'flex';
+      progress.style.display = 'block';
+      
+      audio.play();
+      socket.emit(`${channel}:play`, { track: url, name, volume: audio.volume });
+      updatePlayButton(channel, true);
+      
+      // Progress updates
+      audio.ontimeupdate = () => updateProgress(channel);
+      audio.onloadedmetadata = () => {
+        document.getElementById(`${channel}-duration`).textContent = formatTime(audio.duration);
+      };
+    }
+
+    function togglePlay(channel) {
+      const audio = audioElements[channel];
+      if (audio.paused) {
+        audio.play();
+        socket.emit(`${channel}:play`, { track: audio.src, currentTime: audio.currentTime });
+        updatePlayButton(channel, true);
+      } else {
+        audio.pause();
+        socket.emit(`${channel}:pause`);
+        updatePlayButton(channel, false);
+      }
+    }
+
+    function stopChannel(channel) {
+      const audio = audioElements[channel];
+      audio.pause();
+      audio.currentTime = 0;
+      socket.emit(`${channel}:stop`);
+      
+      const drop = document.getElementById(`${channel}-drop`);
+      drop.innerHTML = `<span class="icon">${channel === 'bgm' ? '🎵' : '🌲'}</span><span>Drop track here or click from library</span>`;
+      drop.classList.remove('has-track');
+      document.getElementById(`${channel}-transport`).style.display = 'none';
+      document.getElementById(`${channel}-progress-container`).style.display = 'none';
+      updatePlayButton(channel, false);
+    }
+
+    function updatePlayButton(channel, playing) {
+      const btn = document.getElementById(`${channel}-play-btn`);
+      btn.textContent = playing ? '⏸' : '▶';
+      btn.classList.toggle('playing', playing);
+    }
+
+    function setVolume(channel, value) {
+      audioElements[channel].volume = value / 100;
+      document.getElementById(`${channel}-volume-val`).textContent = `${value}%`;
+      socket.emit(`${channel}:volume`, value / 100);
+    }
+
+    function toggleLoop(channel) {
+      const toggle = document.getElementById(`${channel}-loop`);
+      toggle.classList.toggle('active');
+      const loop = toggle.classList.contains('active');
+      audioElements[channel].loop = loop;
+      socket.emit(`${channel}:loop`, loop);
+    }
+
+    function seekTo(e, channel) {
+      const bar = e.currentTarget;
+      const rect = bar.getBoundingClientRect();
+      const pct = (e.clientX - rect.left) / rect.width;
+      const time = pct * audioElements[channel].duration;
+      audioElements[channel].currentTime = time;
+      socket.emit(`${channel}:seek`, time);
+    }
+
+    function seekForward(channel) {
+      audioElements[channel].currentTime += 10;
+      socket.emit(`${channel}:seek`, audioElements[channel].currentTime);
+    }
+
+    function seekBackward(channel) {
+      audioElements[channel].currentTime -= 10;
+      socket.emit(`${channel}:seek`, audioElements[channel].currentTime);
+    }
+
+    function updateProgress(channel) {
+      const audio = audioElements[channel];
+      const pct = (audio.currentTime / audio.duration) * 100 || 0;
+      document.getElementById(`${channel}-progress`).style.width = `${pct}%`;
+      document.getElementById(`${channel}-current`).textContent = formatTime(audio.currentTime);
+    }
+
+    function formatTime(sec) {
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${m}:${s.toString().padStart(2, '0')}`;
+    }
+
+    // Fade controls
+    function fadeOut(channel, duration = 2000) {
+      const audio = audioElements[channel];
+      const startVol = audio.volume;
+      const step = startVol / (duration / 50);
+      
+      const fade = setInterval(() => {
+        if (audio.volume > step) {
+          audio.volume -= step;
+        } else {
+          audio.volume = 0;
+          clearInterval(fade);
+          audio.pause();
+          updatePlayButton(channel, false);
+        }
+      }, 50);
+      
+      socket.emit('fade:out', { channel, duration });
+    }
+
+    function fadeIn(channel, duration = 2000) {
+      const audio = audioElements[channel];
+      const targetVol = parseInt(document.getElementById(`${channel}-volume`).value) / 100;
+      audio.volume = 0;
+      audio.play();
+      
+      const step = targetVol / (duration / 50);
+      const fade = setInterval(() => {
+        if (audio.volume < targetVol - step) {
+          audio.volume += step;
+        } else {
+          audio.volume = targetVol;
+          clearInterval(fade);
+        }
+      }, 50);
+      
+      socket.emit('fade:in', { channel, duration, targetVol });
+      updatePlayButton(channel, true);
+    }
+
+    function fadeOutAll() {
+      fadeOut('bgm');
+      fadeOut('ambience');
+    }
+
+    function fadeInAll() {
+      fadeIn('bgm');
+      fadeIn('ambience');
+    }
+
+    function stopAll() {
+      stopChannel('bgm');
+      stopChannel('ambience');
+      socket.emit('master:stop');
+    }
+
+    // SFX
+    function playSfx(url, name) {
+      const sfx = new Audio(url);
+      sfx.play();
+      socket.emit('sfx:play', { url, name });
+      
+      // Visual feedback
+      const pads = document.querySelectorAll('.sfx-pad');
+      pads.forEach(pad => {
+        if (pad.querySelector('.name')?.textContent === name) {
+          pad.classList.add('playing');
+          setTimeout(() => pad.classList.remove('playing'), 500);
+        }
+      });
+    }
+
+    // Upload Modal
+    function openUploadModal() {
+      document.getElementById('upload-modal').classList.add('active');
+    }
+
+    function closeUploadModal() {
+      document.getElementById('upload-modal').classList.remove('active');
+    }
+
+    function triggerUpload(category) {
+      uploadCategory = category;
+      closeUploadModal();
+      document.getElementById('file-upload').click();
+    }
+
+    // File upload
+    document.getElementById('file-upload').addEventListener('change', async (e) => {
+      const files = e.target.files;
+      if (!files.length || !uploadCategory) return;
+      
+      const formData = new FormData();
+      for (const file of files) {
+        formData.append('files', file);
+      }
+      
+      try {
+        const res = await fetch(`/api/upload/${uploadCategory}`, { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.error) {
+          showToast(data.error);
+        } else if (data.success) {
+          showToast(`Uploaded ${data.files.length} file(s) to ${uploadCategory.toUpperCase()}`);
+          loadTracks();
+          setCategory(uploadCategory);
+        }
+      } catch (err) {
+        showToast('Upload failed');
+      }
+      
+      e.target.value = '';
+      uploadCategory = null;
+    });
+
+    async function deleteTrack(category, filename) {
+      if (!confirm('Delete this track?')) return;
+      try {
+        await fetch(`/api/tracks/${category}/${encodeURIComponent(filename)}`, { method: 'DELETE' });
+        loadTracks();
+        showToast('Track deleted');
+      } catch (err) {
+        showToast('Delete failed');
+      }
+    }
+
+    function refreshTracks() {
+      loadTracks();
+      showToast('Library refreshed');
+    }
+
+    // Search
+    document.getElementById('search-input').addEventListener('input', renderTracks);
+
+    // Toast
+    function showToast(message) {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    // Init
+    loadTracks();
+  </script>
+</body>
+</html>

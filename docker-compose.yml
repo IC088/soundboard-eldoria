@@ -1,0 +1,17 @@
+services:
+  soundboard:
+    build: .
+    container_name: ttrpg-soundboard
+    ports:
+      - "3000:3000"
+    volumes:
+      # Persist uploaded audio files by category
+      - ./audio/bgm:/app/audio/bgm
+      - ./audio/ambience:/app/audio/ambience
+      - ./audio/sfx:/app/audio/sfx
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    restart: unless-stopped
+    # For local network access (players on same WiFi)
+    # network_mode: host

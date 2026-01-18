@@ -372,9 +372,368 @@
 
   <!-- Socket.IO -->
   <script src="/socket.io/socket.io.js"></script>
-  
-  <!-- Player Volume Control Script -->
-  <script src="/player-volume-control.js"></script>
+
+  <script>
+    // PlayerVolumeControl class embedded
+    class PlayerVolumeControl {
+      constructor(socket) {
+        this.socket = socket;
+        
+        // Player volume settings (stored locally)
+        this.volumes = {
+          master: 0.7,      // Master volume for all audio
+          bgm: 1.0,         // BGM multiplier
+          ambience: 1.0,    // Ambience multiplier
+          sfx: 1.0          // SFX multiplier
+        };
+        
+        // Audio elements
+        this.audioElements = {
+          bgm: null,
+          ambience: null,
+          sfx: new Map() // SFX are one-shot, so we track multiple
+        };
+        
+        // Load saved preferences from localStorage
+        this.loadPreferences();
+        
+        // Setup UI controls
+        this.setupUI();
+        
+        // Setup socket listeners
+        this.setupSocketListeners();
+      }
+      
+      // Load player preferences from localStorage
+      loadPreferences() {
+        const saved = localStorage.getItem('soundboard_player_volumes');
+        if (saved) {
+          try {
+            this.volumes = { ...this.volumes, ...JSON.parse(saved) };
+          } catch (e) {
+            console.error('Failed to load volume preferences:', e);
+          }
+        }
+      }
+      
+      // Save player preferences to localStorage
+      savePreferences() {
+        localStorage.setItem('soundboard_player_volumes', JSON.stringify(this.volumes));
+      }
+      
+      // Setup UI controls for volume
+      setupUI() {
+        // Set initial slider values from saved preferences
+        document.getElementById('volume-master').value = this.volumes.master * 100;
+        document.getElementById('volume-bgm').value = this.volumes.bgm * 100;
+        document.getElementById('volume-ambience').value = this.volumes.ambience * 100;
+        document.getElementById('volume-sfx').value = this.volumes.sfx * 100;
+        
+        this.updateVolumeDisplays();
+        
+        // Attach event listeners
+        document.getElementById('volume-master').addEventListener('input', (e) => {
+          this.setVolume('master', e.target.value / 100);
+        });
+        
+        document.getElementById('volume-bgm').addEventListener('input', (e) => {
+          this.setVolume('bgm', e.target.value / 100);
+        });
+        
+        document.getElementById('volume-ambience').addEventListener('input', (e) => {
+          this.setVolume('ambience', e.target.value / 100);
+        });
+        
+        document.getElementById('volume-sfx').addEventListener('input', (e) => {
+          this.setVolume('sfx', e.target.value / 100);
+        });
+        
+        document.getElementById('reset-volumes').addEventListener('click', () => {
+          this.resetVolumes();
+        });
+      }
+      
+      // Update volume display percentages
+      updateVolumeDisplays() {
+        document.getElementById('master-value').textContent = Math.round(this.volumes.master * 100) + '%';
+        document.getElementById('bgm-value').textContent = Math.round(this.volumes.bgm * 100) + '%';
+        document.getElementById('ambience-value').textContent = Math.round(this.volumes.ambience * 100) + '%';
+        document.getElementById('sfx-value').textContent = Math.round(this.volumes.sfx * 100) + '%';
+      }
+      
+      // Set volume for a specific channel
+      setVolume(channel, value) {
+        this.volumes[channel] = value;
+        this.updateVolumeDisplays();
+        this.savePreferences();
+        
+        // Apply to currently playing audio
+        if (channel === 'master') {
+          this.applyAllVolumes();
+        } else {
+          this.applyVolume(channel);
+        }
+        
+        // Optional: Send to server for logging
+        this.socket.emit(`player:volume:${channel}`, value);
+      }
+      
+      // Reset all volumes to defaults
+      resetVolumes() {
+        this.volumes = {
+          master: 0.7,
+          bgm: 1.0,
+          ambience: 1.0,
+          sfx: 1.0
+        };
+        
+        document.getElementById('volume-master').value = 70;
+        document.getElementById('volume-bgm').value = 100;
+        document.getElementById('volume-ambience').value = 100;
+        document.getElementById('volume-sfx').value = 100;
+        
+        this.updateVolumeDisplays();
+        this.savePreferences();
+        this.applyAllVolumes();
+      }
+      
+      // Calculate final volume for a channel
+      calculateVolume(channel, dmVolume) {
+        return this.volumes.master * this.volumes[channel] * dmVolume;
+      }
+      
+      // Apply volume to a specific channel
+      applyVolume(channel) {
+        const audio = this.audioElements[channel];
+        if (!audio) return;
+        
+        // Get the DM's volume from the audio element's dataset
+        const dmVolume = parseFloat(audio.dataset.dmVolume || '1.0');
+        audio.volume = this.calculateVolume(channel, dmVolume);
+      }
+      
+      // Apply all volumes
+      applyAllVolumes() {
+        ['bgm', 'ambience'].forEach(channel => this.applyVolume(channel));
+        
+        // Apply to all active SFX
+        this.audioElements.sfx.forEach(audio => {
+          const dmVolume = parseFloat(audio.dataset.dmVolume || '1.0');
+          audio.volume = this.calculateVolume('sfx', dmVolume);
+        });
+      }
+      
+      // Setup socket listeners
+      setupSocketListeners() {
+        // BGM events
+        this.socket.on('bgm:play', (data) => {
+          console.log('BGM Play event:', data);
+          
+          // Get or create audio element
+          if (!this.audioElements.bgm) {
+            this.audioElements.bgm = document.getElementById('bgm-audio');
+          }
+          
+          if (this.audioElements.bgm && data.track) {
+            // Set the source
+            this.audioElements.bgm.src = data.track.url;
+            
+            // Store GM volume
+            const dmVolume = data.volume !== undefined ? data.volume : 0.5;
+            this.audioElements.bgm.dataset.dmVolume = dmVolume;
+            
+            // Calculate and apply volume
+            this.audioElements.bgm.volume = this.calculateVolume('bgm', dmVolume);
+            
+            // Set loop
+            this.audioElements.bgm.loop = data.loop !== undefined ? data.loop : true;
+            
+            // Set current time if provided
+            if (data.currentTime !== undefined) {
+              this.audioElements.bgm.currentTime = data.currentTime;
+            }
+            
+            // Play
+            this.audioElements.bgm.play().catch(e => {
+              console.error('BGM play error:', e);
+              // Try to play on user interaction
+              document.addEventListener('click', () => {
+                this.audioElements.bgm.play().catch(err => console.log('Still blocked:', err));
+              }, { once: true });
+            });
+          }
+        });
+        
+        this.socket.on('bgm:pause', () => {
+          if (this.audioElements.bgm) {
+            this.audioElements.bgm.pause();
+          }
+        });
+        
+        this.socket.on('bgm:stop', () => {
+          if (this.audioElements.bgm) {
+            this.audioElements.bgm.pause();
+            this.audioElements.bgm.currentTime = 0;
+            this.audioElements.bgm.src = '';
+          }
+        });
+        
+        this.socket.on('bgm:volume', (dmVolume) => {
+          if (this.audioElements.bgm) {
+            this.audioElements.bgm.dataset.dmVolume = dmVolume;
+            this.audioElements.bgm.volume = this.calculateVolume('bgm', dmVolume);
+          }
+        });
+        
+        this.socket.on('bgm:seek', (time) => {
+          if (this.audioElements.bgm) {
+            this.audioElements.bgm.currentTime = time;
+          }
+        });
+        
+        // Ambience events
+        this.socket.on('ambience:play', (data) => {
+          console.log('Ambience Play event:', data);
+          
+          if (!this.audioElements.ambience) {
+            this.audioElements.ambience = document.getElementById('ambience-audio');
+          }
+          
+          if (this.audioElements.ambience && data.track) {
+            // Set the source
+            this.audioElements.ambience.src = data.track.url;
+            
+            // Store GM volume
+            const dmVolume = data.volume !== undefined ? data.volume : 0.3;
+            this.audioElements.ambience.dataset.dmVolume = dmVolume;
+            
+            // Calculate and apply volume
+            this.audioElements.ambience.volume = this.calculateVolume('ambience', dmVolume);
+            
+            // Set loop
+            this.audioElements.ambience.loop = data.loop !== undefined ? data.loop : true;
+            
+            // Set current time if provided
+            if (data.currentTime !== undefined) {
+              this.audioElements.ambience.currentTime = data.currentTime;
+            }
+            
+            // Play
+            this.audioElements.ambience.play().catch(e => {
+              console.error('Ambience play error:', e);
+              document.addEventListener('click', () => {
+                this.audioElements.ambience.play().catch(err => console.log('Still blocked:', err));
+              }, { once: true });
+            });
+          }
+        });
+        
+        this.socket.on('ambience:pause', () => {
+          if (this.audioElements.ambience) {
+            this.audioElements.ambience.pause();
+          }
+        });
+        
+        this.socket.on('ambience:stop', () => {
+          if (this.audioElements.ambience) {
+            this.audioElements.ambience.pause();
+            this.audioElements.ambience.currentTime = 0;
+            this.audioElements.ambience.src = '';
+          }
+        });
+        
+        this.socket.on('ambience:volume', (dmVolume) => {
+          if (this.audioElements.ambience) {
+            this.audioElements.ambience.dataset.dmVolume = dmVolume;
+            this.audioElements.ambience.volume = this.calculateVolume('ambience', dmVolume);
+          }
+        });
+        
+        // SFX events
+        this.socket.on('sfx:play', (data) => {
+          console.log('SFX Play event:', data);
+          
+          if (!data || !data.url) {
+            console.error('SFX data missing url:', data);
+            return;
+          }
+          
+          // Create new audio element for this SFX
+          const audio = new Audio(data.url);
+          const dmVolume = data.volume !== undefined ? data.volume : 1.0;
+          
+          audio.dataset.dmVolume = dmVolume;
+          audio.volume = this.calculateVolume('sfx', dmVolume);
+          
+          // Track it
+          const id = Date.now() + Math.random();
+          this.audioElements.sfx.set(id, audio);
+          
+          // Remove from tracking when done
+          audio.addEventListener('ended', () => {
+            this.audioElements.sfx.delete(id);
+          });
+          
+          audio.play().catch(e => console.error('SFX play error:', e));
+        });
+        
+        // Master stop
+        this.socket.on('master:stop', () => {
+          if (this.audioElements.bgm) {
+            this.audioElements.bgm.pause();
+            this.audioElements.bgm.currentTime = 0;
+            this.audioElements.bgm.src = '';
+          }
+          if (this.audioElements.ambience) {
+            this.audioElements.ambience.pause();
+            this.audioElements.ambience.currentTime = 0;
+            this.audioElements.ambience.src = '';
+          }
+          // Stop all SFX
+          this.audioElements.sfx.forEach(audio => {
+            audio.pause();
+            audio.currentTime = 0;
+          });
+          this.audioElements.sfx.clear();
+        });
+        
+        // State sync for new connections
+        this.socket.on('state:sync', (state) => {
+          console.log('State sync:', state);
+          
+          // Apply BGM state
+          if (state.bgm && state.bgm.playing && state.bgm.track) {
+            if (!this.audioElements.bgm) {
+              this.audioElements.bgm = document.getElementById('bgm-audio');
+            }
+            if (this.audioElements.bgm) {
+              this.audioElements.bgm.src = state.bgm.track.url;
+              this.audioElements.bgm.dataset.dmVolume = state.bgm.volume;
+              this.audioElements.bgm.volume = this.calculateVolume('bgm', state.bgm.volume);
+              this.audioElements.bgm.loop = state.bgm.loop !== undefined ? state.bgm.loop : true;
+              this.audioElements.bgm.currentTime = state.bgm.currentTime || 0;
+              this.audioElements.bgm.play().catch(e => console.error('BGM sync play error:', e));
+            }
+          }
+          
+          // Apply Ambience state
+          if (state.ambience && state.ambience.playing && state.ambience.track) {
+            if (!this.audioElements.ambience) {
+              this.audioElements.ambience = document.getElementById('ambience-audio');
+            }
+            if (this.audioElements.ambience) {
+              this.audioElements.ambience.src = state.ambience.track.url;
+              this.audioElements.ambience.dataset.dmVolume = state.ambience.volume;
+              this.audioElements.ambience.volume = this.calculateVolume('ambience', state.ambience.volume);
+              this.audioElements.ambience.loop = state.ambience.loop !== undefined ? state.ambience.loop : true;
+              this.audioElements.ambience.currentTime = state.ambience.currentTime || 0;
+              this.audioElements.ambience.play().catch(e => console.error('Ambience sync play error:', e));
+            }
+          }
+        });
+      }
+    }
+  </script>
 
   <script>
     // Initialize Socket.IO connection
@@ -410,16 +769,58 @@
 
     // Setup volume change listeners
     function setupVolumeListeners() {
-      // These are handled by PlayerVolumeControl class
-      // But we need to update the "Now Playing" display
-      socket.on('bgm:play', updateNowPlaying);
-      socket.on('bgm:stop', updateNowPlaying);
-      socket.on('ambience:play', updateNowPlaying);
-      socket.on('ambience:stop', updateNowPlaying);
-      socket.on('master:stop', updateNowPlaying);
+      // Update now playing when tracks change
+      socket.on('bgm:play', (data) => {
+        console.log('BGM play received:', data);
+        currentlyPlaying.bgm = data;
+        updateNowPlaying();
+      });
+      
+      socket.on('bgm:stop', () => {
+        console.log('BGM stopped');
+        currentlyPlaying.bgm = null;
+        updateNowPlaying();
+      });
+      
+      socket.on('bgm:pause', () => {
+        console.log('BGM paused');
+        if (currentlyPlaying.bgm) {
+          currentlyPlaying.bgm.playing = false;
+        }
+        updateNowPlaying();
+      });
+      
+      socket.on('ambience:play', (data) => {
+        console.log('Ambience play received:', data);
+        currentlyPlaying.ambience = data;
+        updateNowPlaying();
+      });
+      
+      socket.on('ambience:stop', () => {
+        console.log('Ambience stopped');
+        currentlyPlaying.ambience = null;
+        updateNowPlaying();
+      });
+      
+      socket.on('ambience:pause', () => {
+        console.log('Ambience paused');
+        if (currentlyPlaying.ambience) {
+          currentlyPlaying.ambience.playing = false;
+        }
+        updateNowPlaying();
+      });
+      
+      socket.on('master:stop', () => {
+        console.log('Master stop');
+        currentlyPlaying.bgm = null;
+        currentlyPlaying.ambience = null;
+        updateNowPlaying();
+      });
+      
       socket.on('state:sync', (state) => {
-        currentlyPlaying.bgm = state.bgm.playing ? state.bgm : null;
-        currentlyPlaying.ambience = state.ambience.playing ? state.ambience : null;
+        console.log('State sync received:', state);
+        currentlyPlaying.bgm = state.bgm && state.bgm.playing ? state.bgm : null;
+        currentlyPlaying.ambience = state.ambience && state.ambience.playing ? state.ambience : null;
         updateNowPlaying();
       });
     }
@@ -430,6 +831,8 @@
       
       const bgm = currentlyPlaying.bgm;
       const ambience = currentlyPlaying.ambience;
+      
+      console.log('Updating now playing - BGM:', bgm, 'Ambience:', ambience);
       
       if (!bgm && !ambience) {
         container.innerHTML = `
@@ -444,26 +847,30 @@
       let html = '';
 
       if (bgm && bgm.track) {
+        const trackName = bgm.track.name || bgm.track.filename || 'Unknown Track';
+        const volume = bgm.volume !== undefined ? bgm.volume : 0.5;
         html += `
           <div class="track-item">
             <div class="track-indicator"></div>
             <div class="track-info">
-              <div class="track-name">🎵 ${bgm.track.name}</div>
+              <div class="track-name">🎵 ${trackName}</div>
               <div class="track-type">Background Music</div>
-              <div class="dm-volume">GM Volume: ${Math.round(bgm.volume * 100)}%</div>
+              <div class="dm-volume">GM Volume: ${Math.round(volume * 100)}%</div>
             </div>
           </div>
         `;
       }
 
       if (ambience && ambience.track) {
+        const trackName = ambience.track.name || ambience.track.filename || 'Unknown Track';
+        const volume = ambience.volume !== undefined ? ambience.volume : 0.3;
         html += `
           <div class="track-item">
             <div class="track-indicator"></div>
             <div class="track-info">
-              <div class="track-name">🌊 ${ambience.track.name}</div>
+              <div class="track-name">🌊 ${trackName}</div>
               <div class="track-type">Ambience</div>
-              <div class="dm-volume">GM Volume: ${Math.round(ambience.volume * 100)}%</div>
+              <div class="dm-volume">GM Volume: ${Math.round(volume * 100)}%</div>
             </div>
           </div>
         `;
@@ -472,34 +879,8 @@
       container.innerHTML = html;
     }
 
-    // Listen for BGM changes
-    socket.on('bgm:play', (data) => {
-      currentlyPlaying.bgm = data;
-      updateNowPlaying();
-    });
-
-    socket.on('bgm:stop', () => {
-      currentlyPlaying.bgm = null;
-      updateNowPlaying();
-    });
-
-    // Listen for Ambience changes
-    socket.on('ambience:play', (data) => {
-      currentlyPlaying.ambience = data;
-      updateNowPlaying();
-    });
-
-    socket.on('ambience:stop', () => {
-      currentlyPlaying.ambience = null;
-      updateNowPlaying();
-    });
-
-    // Master stop
-    socket.on('master:stop', () => {
-      currentlyPlaying.bgm = null;
-      currentlyPlaying.ambience = null;
-      updateNowPlaying();
-    });
+    // Listen for BGM changes (already handled in setupVolumeListeners)
+    // Removed duplicate listeners
   </script>
 </body>
 </html>

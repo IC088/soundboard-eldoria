@@ -64,6 +64,11 @@ app.use('/audio/ambience', express.static(AUDIO_DIRS.ambience));
 app.use('/audio/sfx', express.static(AUDIO_DIRS.sfx));
 app.use(express.json());
 
+// Serve player-volume-control.js specifically
+app.get('/player-volume-control.js', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'player-volume-control.js'));
+});
+
 // Current playback state
 let playbackState = {
   bgm: { track: null, playing: false, volume: 0.5, currentTime: 0, loop: true },

@@ -73,6 +73,17 @@
       50% { opacity: 0.5; }
     }
 
+    @keyframes slideDown {
+      from {
+        transform: translateX(-50%) translateY(-20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+      }
+    }
+
     /* Volume Panel Styles */
     .volume-panel {
       background: rgba(30, 30, 30, 0.95);
@@ -504,30 +515,105 @@
       
       // Play audio with fallback for autoplay policy
       playAudioWithFallback(audio, label) {
-        audio.play().catch(e => {
-          console.error(`${label} play error:`, e);
-          
-          // If it's NotAllowedError, set up a listener for user interaction
-          if (e.name === 'NotAllowedError') {
-            console.log(`${label} blocked by autoplay policy. Waiting for user interaction...`);
+        // First attempt: try normal play
+        audio.play()
+          .then(() => {
+            console.log(`${label} playing normally`);
+            audio.muted = false;
+          })
+          .catch(e => {
+            console.error(`${label} play error:`, e);
             
-            // Try on any user interaction
-            const tryPlay = () => {
+            // If it's NotAllowedError, use muted autoplay strategy
+            if (e.name === 'NotAllowedError') {
+              console.log(`${label} blocked by autoplay policy. Using muted playback...`);
+              
+              // Attempt with muted audio (usually allowed)
+              audio.muted = true;
               audio.play()
                 .then(() => {
-                  console.log(`${label} started after user interaction`);
-                  document.removeEventListener('click', tryPlay);
-                  document.removeEventListener('keydown', tryPlay);
-                  document.removeEventListener('touchstart', tryPlay);
+                  console.log(`${label} playing muted (autoplay policy)`);
+                  // Show indicator that audio is playing but muted
+                  this.showAutoplayNotice();
+                  
+                  // Try to unmute on first user interaction
+                  this.registerUnmuteListener(audio, label);
                 })
-                .catch(err => console.log(`${label} still blocked after interaction:`, err));
-            };
-            
-            document.addEventListener('click', tryPlay, { once: false });
-            document.addEventListener('keydown', tryPlay, { once: false });
-            document.addEventListener('touchstart', tryPlay, { once: false });
+                .catch(err => {
+                  console.error(`${label} even muted playback failed:`, err);
+                  // Last resort: set up listeners to try again
+                  this.registerRetryListener(audio, label);
+                });
+            }
+          });
+      }
+      
+      // Show notice about muted audio
+      showAutoplayNotice() {
+        // Only show once
+        if (document.getElementById('autoplay-notice')) return;
+        
+        const notice = document.createElement('div');
+        notice.id = 'autoplay-notice';
+        notice.style.cssText = `
+          position: fixed;
+          top: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(255, 180, 50, 0.9);
+          color: #000;
+          padding: 12px 20px;
+          border-radius: 5px;
+          font-weight: bold;
+          z-index: 10000;
+          animation: slideDown 0.3s ease;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        `;
+        notice.textContent = '🔊 Click anywhere to unmute audio';
+        document.body.appendChild(notice);
+        
+        // Remove after 5 seconds
+        setTimeout(() => notice.remove(), 5000);
+      }
+      
+      // Register unmute listener
+      registerUnmuteListener(audio, label) {
+        const unmuteHandler = () => {
+          if (audio.muted) {
+            audio.muted = false;
+            console.log(`${label} unmuted after user interaction`);
+            const notice = document.getElementById('autoplay-notice');
+            if (notice) notice.remove();
           }
-        });
+          // Don't remove listener, keep trying
+        };
+        
+        // Listen to multiple interaction types
+        document.addEventListener('click', unmuteHandler, { capture: true });
+        document.addEventListener('keydown', unmuteHandler, { capture: true });
+        document.addEventListener('touchstart', unmuteHandler, { capture: true });
+        document.addEventListener('mousedown', unmuteHandler, { capture: true });
+      }
+      
+      // Register retry listener for complete playback failure
+      registerRetryListener(audio, label) {
+        const retryHandler = () => {
+          if (audio.paused) {
+            audio.muted = false;
+            audio.play()
+              .then(() => {
+                console.log(`${label} started after user interaction`);
+                document.removeEventListener('click', retryHandler, { capture: true });
+                document.removeEventListener('keydown', retryHandler, { capture: true });
+                document.removeEventListener('touchstart', retryHandler, { capture: true });
+              })
+              .catch(err => console.log(`${label} still blocked:`, err));
+          }
+        };
+        
+        document.addEventListener('click', retryHandler, { capture: true });
+        document.addEventListener('keydown', retryHandler, { capture: true });
+        document.addEventListener('touchstart', retryHandler, { capture: true });
       }
       
       // Apply volume to a specific channel

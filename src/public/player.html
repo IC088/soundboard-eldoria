@@ -405,14 +405,108 @@
           sfx: new Map() // SFX are one-shot, so we track multiple
         };
         
+        // Gesture unlock state - tracks if user has interacted with page
+        this.gestureUnlocked = false;
+        this.pendingPlays = []; // Queue of audio plays waiting for gesture
+        
         // Load saved preferences from localStorage
         this.loadPreferences();
         
         // Setup UI controls
         this.setupUI();
         
+        // Setup gesture detection
+        this.setupGestureDetection();
+        
         // Setup socket listeners
         this.setupSocketListeners();
+      }
+      
+      // Detect first user gesture to unlock autoplay
+      setupGestureDetection() {
+        const unlock = () => {
+          if (!this.gestureUnlocked) {
+            console.log('🔓 User gesture detected - autoplay unlocked!');
+            this.gestureUnlocked = true;
+            
+            // Show notice that we're ready
+            this.showUnlockedNotice();
+            
+            // Process any pending plays
+            this.processPendingPlays();
+            
+            // Remove listeners after unlocking
+            document.removeEventListener('click', unlock, { capture: true });
+            document.removeEventListener('keydown', unlock, { capture: true });
+            document.removeEventListener('touchstart', unlock, { capture: true });
+            document.removeEventListener('mousedown', unlock, { capture: true });
+          }
+        };
+        
+        // Listen for user interaction
+        document.addEventListener('click', unlock, { capture: true });
+        document.addEventListener('keydown', unlock, { capture: true });
+        document.addEventListener('touchstart', unlock, { capture: true });
+        document.addEventListener('mousedown', unlock, { capture: true });
+        
+        // Show initial message
+        this.showInitialNotice();
+      }
+      
+      // Show initial notice about needing user interaction
+      showInitialNotice() {
+        const notice = document.createElement('div');
+        notice.id = 'gesture-notice';
+        notice.style.cssText = `
+          position: fixed;
+          top: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(255, 180, 50, 0.9);
+          color: #000;
+          padding: 12px 20px;
+          border-radius: 5px;
+          font-weight: bold;
+          z-index: 10000;
+          animation: slideDown 0.3s ease;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        `;
+        notice.textContent = '👋 Click anywhere to enable audio';
+        document.body.appendChild(notice);
+      }
+      
+      // Show unlocked notice
+      showUnlockedNotice() {
+        const notice = document.getElementById('gesture-notice');
+        if (notice) {
+          notice.textContent = '🔊 Audio enabled! Ready for sound';
+          notice.style.background = 'rgba(76, 175, 80, 0.9)';
+          setTimeout(() => notice.remove(), 3000);
+        }
+      }
+      
+      // Queue a play request
+      queuePlay(audio, label) {
+        this.pendingPlays.push({ audio, label });
+      }
+      
+      // Process all pending plays
+      processPendingPlays() {
+        while (this.pendingPlays.length > 0) {
+          const { audio, label } = this.pendingPlays.shift();
+          this.attemptPlay(audio, label);
+        }
+      }
+      
+      // Attempt to play audio (should only be called after gesture unlock or from socket events after unlock)
+      attemptPlay(audio, label) {
+        audio.play()
+          .then(() => {
+            console.log(`✅ ${label} playing successfully`);
+          })
+          .catch(e => {
+            console.error(`❌ ${label} play error:`, e);
+          });
       }
       
       // Load player preferences from localStorage
@@ -513,107 +607,15 @@
         return this.volumes.master * this.volumes[channel] * dmVolume;
       }
       
-      // Play audio with fallback for autoplay policy
+      // Play audio with gesture unlock awareness
       playAudioWithFallback(audio, label) {
-        // First attempt: try normal play
-        audio.play()
-          .then(() => {
-            console.log(`${label} playing normally`);
-            audio.muted = false;
-          })
-          .catch(e => {
-            console.error(`${label} play error:`, e);
-            
-            // If it's NotAllowedError, use muted autoplay strategy
-            if (e.name === 'NotAllowedError') {
-              console.log(`${label} blocked by autoplay policy. Using muted playback...`);
-              
-              // Attempt with muted audio (usually allowed)
-              audio.muted = true;
-              audio.play()
-                .then(() => {
-                  console.log(`${label} playing muted (autoplay policy)`);
-                  // Show indicator that audio is playing but muted
-                  this.showAutoplayNotice();
-                  
-                  // Try to unmute on first user interaction
-                  this.registerUnmuteListener(audio, label);
-                })
-                .catch(err => {
-                  console.error(`${label} even muted playback failed:`, err);
-                  // Last resort: set up listeners to try again
-                  this.registerRetryListener(audio, label);
-                });
-            }
-          });
-      }
-      
-      // Show notice about muted audio
-      showAutoplayNotice() {
-        // Only show once
-        if (document.getElementById('autoplay-notice')) return;
+        if (!this.gestureUnlocked) {
+          console.log(`⏸️ ${label} queued - waiting for user interaction...`);
+          this.queuePlay(audio, label);
+          return;
+        }
         
-        const notice = document.createElement('div');
-        notice.id = 'autoplay-notice';
-        notice.style.cssText = `
-          position: fixed;
-          top: 20px;
-          left: 50%;
-          transform: translateX(-50%);
-          background: rgba(255, 180, 50, 0.9);
-          color: #000;
-          padding: 12px 20px;
-          border-radius: 5px;
-          font-weight: bold;
-          z-index: 10000;
-          animation: slideDown 0.3s ease;
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-        `;
-        notice.textContent = '🔊 Click anywhere to unmute audio';
-        document.body.appendChild(notice);
-        
-        // Remove after 5 seconds
-        setTimeout(() => notice.remove(), 5000);
-      }
-      
-      // Register unmute listener
-      registerUnmuteListener(audio, label) {
-        const unmuteHandler = () => {
-          if (audio.muted) {
-            audio.muted = false;
-            console.log(`${label} unmuted after user interaction`);
-            const notice = document.getElementById('autoplay-notice');
-            if (notice) notice.remove();
-          }
-          // Don't remove listener, keep trying
-        };
-        
-        // Listen to multiple interaction types
-        document.addEventListener('click', unmuteHandler, { capture: true });
-        document.addEventListener('keydown', unmuteHandler, { capture: true });
-        document.addEventListener('touchstart', unmuteHandler, { capture: true });
-        document.addEventListener('mousedown', unmuteHandler, { capture: true });
-      }
-      
-      // Register retry listener for complete playback failure
-      registerRetryListener(audio, label) {
-        const retryHandler = () => {
-          if (audio.paused) {
-            audio.muted = false;
-            audio.play()
-              .then(() => {
-                console.log(`${label} started after user interaction`);
-                document.removeEventListener('click', retryHandler, { capture: true });
-                document.removeEventListener('keydown', retryHandler, { capture: true });
-                document.removeEventListener('touchstart', retryHandler, { capture: true });
-              })
-              .catch(err => console.log(`${label} still blocked:`, err));
-          }
-        };
-        
-        document.addEventListener('click', retryHandler, { capture: true });
-        document.addEventListener('keydown', retryHandler, { capture: true });
-        document.addEventListener('touchstart', retryHandler, { capture: true });
+        this.attemptPlay(audio, label);
       }
       
       // Apply volume to a specific channel

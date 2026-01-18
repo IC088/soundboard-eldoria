@@ -208,14 +208,54 @@ class PlayerVolumeControl {
   setupSocketListeners() {
     // BGM events
     this.socket.on('bgm:play', (data) => {
+      console.log('BGM Play event:', data);
+      
+      // Get or create audio element
       if (!this.audioElements.bgm) {
         this.audioElements.bgm = document.getElementById('bgm-audio');
       }
       
-      if (this.audioElements.bgm) {
-        const dmVolume = data.volume || 0.5;
+      if (this.audioElements.bgm && data.track) {
+        // Set the source
+        this.audioElements.bgm.src = data.track.url;
+        
+        // Store GM volume
+        const dmVolume = data.volume !== undefined ? data.volume : 0.5;
         this.audioElements.bgm.dataset.dmVolume = dmVolume;
+        
+        // Calculate and apply volume
         this.audioElements.bgm.volume = this.calculateVolume('bgm', dmVolume);
+        
+        // Set loop
+        this.audioElements.bgm.loop = data.loop !== undefined ? data.loop : true;
+        
+        // Set current time if provided
+        if (data.currentTime !== undefined) {
+          this.audioElements.bgm.currentTime = data.currentTime;
+        }
+        
+        // Play
+        this.audioElements.bgm.play().catch(e => {
+          console.error('BGM play error:', e);
+          // Try to play on user interaction
+          document.addEventListener('click', () => {
+            this.audioElements.bgm.play().catch(err => console.log('Still blocked:', err));
+          }, { once: true });
+        });
+      }
+    });
+    
+    this.socket.on('bgm:pause', () => {
+      if (this.audioElements.bgm) {
+        this.audioElements.bgm.pause();
+      }
+    });
+    
+    this.socket.on('bgm:stop', () => {
+      if (this.audioElements.bgm) {
+        this.audioElements.bgm.pause();
+        this.audioElements.bgm.currentTime = 0;
+        this.audioElements.bgm.src = '';
       }
     });
     
@@ -226,16 +266,60 @@ class PlayerVolumeControl {
       }
     });
     
+    this.socket.on('bgm:seek', (time) => {
+      if (this.audioElements.bgm) {
+        this.audioElements.bgm.currentTime = time;
+      }
+    });
+    
     // Ambience events
     this.socket.on('ambience:play', (data) => {
+      console.log('Ambience Play event:', data);
+      
       if (!this.audioElements.ambience) {
         this.audioElements.ambience = document.getElementById('ambience-audio');
       }
       
-      if (this.audioElements.ambience) {
-        const dmVolume = data.volume || 0.3;
+      if (this.audioElements.ambience && data.track) {
+        // Set the source
+        this.audioElements.ambience.src = data.track.url;
+        
+        // Store GM volume
+        const dmVolume = data.volume !== undefined ? data.volume : 0.3;
         this.audioElements.ambience.dataset.dmVolume = dmVolume;
+        
+        // Calculate and apply volume
         this.audioElements.ambience.volume = this.calculateVolume('ambience', dmVolume);
+        
+        // Set loop
+        this.audioElements.ambience.loop = data.loop !== undefined ? data.loop : true;
+        
+        // Set current time if provided
+        if (data.currentTime !== undefined) {
+          this.audioElements.ambience.currentTime = data.currentTime;
+        }
+        
+        // Play
+        this.audioElements.ambience.play().catch(e => {
+          console.error('Ambience play error:', e);
+          document.addEventListener('click', () => {
+            this.audioElements.ambience.play().catch(err => console.log('Still blocked:', err));
+          }, { once: true });
+        });
+      }
+    });
+    
+    this.socket.on('ambience:pause', () => {
+      if (this.audioElements.ambience) {
+        this.audioElements.ambience.pause();
+      }
+    });
+    
+    this.socket.on('ambience:stop', () => {
+      if (this.audioElements.ambience) {
+        this.audioElements.ambience.pause();
+        this.audioElements.ambience.currentTime = 0;
+        this.audioElements.ambience.src = '';
       }
     });
     
@@ -248,9 +332,16 @@ class PlayerVolumeControl {
     
     // SFX events
     this.socket.on('sfx:play', (data) => {
+      console.log('SFX Play event:', data);
+      
+      if (!data || !data.url) {
+        console.error('SFX data missing url:', data);
+        return;
+      }
+      
       // Create new audio element for this SFX
       const audio = new Audio(data.url);
-      const dmVolume = data.volume || 1.0;
+      const dmVolume = data.volume !== undefined ? data.volume : 1.0;
       
       audio.dataset.dmVolume = dmVolume;
       audio.volume = this.calculateVolume('sfx', dmVolume);
@@ -267,17 +358,58 @@ class PlayerVolumeControl {
       audio.play().catch(e => console.error('SFX play error:', e));
     });
     
+    // Master stop
+    this.socket.on('master:stop', () => {
+      if (this.audioElements.bgm) {
+        this.audioElements.bgm.pause();
+        this.audioElements.bgm.currentTime = 0;
+        this.audioElements.bgm.src = '';
+      }
+      if (this.audioElements.ambience) {
+        this.audioElements.ambience.pause();
+        this.audioElements.ambience.currentTime = 0;
+        this.audioElements.ambience.src = '';
+      }
+      // Stop all SFX
+      this.audioElements.sfx.forEach(audio => {
+        audio.pause();
+        audio.currentTime = 0;
+      });
+      this.audioElements.sfx.clear();
+    });
+    
     // State sync for new connections
     this.socket.on('state:sync', (state) => {
-      // Apply volumes to existing audio when reconnecting
-      if (state.bgm.playing && this.audioElements.bgm) {
-        this.audioElements.bgm.dataset.dmVolume = state.bgm.volume;
-        this.applyVolume('bgm');
+      console.log('State sync:', state);
+      
+      // Apply BGM state
+      if (state.bgm && state.bgm.playing && state.bgm.track) {
+        if (!this.audioElements.bgm) {
+          this.audioElements.bgm = document.getElementById('bgm-audio');
+        }
+        if (this.audioElements.bgm) {
+          this.audioElements.bgm.src = state.bgm.track.url;
+          this.audioElements.bgm.dataset.dmVolume = state.bgm.volume;
+          this.audioElements.bgm.volume = this.calculateVolume('bgm', state.bgm.volume);
+          this.audioElements.bgm.loop = state.bgm.loop !== undefined ? state.bgm.loop : true;
+          this.audioElements.bgm.currentTime = state.bgm.currentTime || 0;
+          this.audioElements.bgm.play().catch(e => console.error('BGM sync play error:', e));
+        }
       }
       
-      if (state.ambience.playing && this.audioElements.ambience) {
-        this.audioElements.ambience.dataset.dmVolume = state.ambience.volume;
-        this.applyVolume('ambience');
+      // Apply Ambience state
+      if (state.ambience && state.ambience.playing && state.ambience.track) {
+        if (!this.audioElements.ambience) {
+          this.audioElements.ambience = document.getElementById('ambience-audio');
+        }
+        if (this.audioElements.ambience) {
+          this.audioElements.ambience.src = state.ambience.track.url;
+          this.audioElements.ambience.dataset.dmVolume = state.ambience.volume;
+          this.audioElements.ambience.volume = this.calculateVolume('ambience', state.ambience.volume);
+          this.audioElements.ambience.loop = state.ambience.loop !== undefined ? state.ambience.loop : true;
+          this.audioElements.ambience.currentTime = state.ambience.currentTime || 0;
+          this.audioElements.ambience.play().catch(e => console.error('Ambience sync play error:', e));
+        }
       }
     });
   }

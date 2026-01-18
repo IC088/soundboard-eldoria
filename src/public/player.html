@@ -502,7 +502,36 @@
         return this.volumes.master * this.volumes[channel] * dmVolume;
       }
       
+      // Play audio with fallback for autoplay policy
+      playAudioWithFallback(audio, label) {
+        audio.play().catch(e => {
+          console.error(`${label} play error:`, e);
+          
+          // If it's NotAllowedError, set up a listener for user interaction
+          if (e.name === 'NotAllowedError') {
+            console.log(`${label} blocked by autoplay policy. Waiting for user interaction...`);
+            
+            // Try on any user interaction
+            const tryPlay = () => {
+              audio.play()
+                .then(() => {
+                  console.log(`${label} started after user interaction`);
+                  document.removeEventListener('click', tryPlay);
+                  document.removeEventListener('keydown', tryPlay);
+                  document.removeEventListener('touchstart', tryPlay);
+                })
+                .catch(err => console.log(`${label} still blocked after interaction:`, err));
+            };
+            
+            document.addEventListener('click', tryPlay, { once: false });
+            document.addEventListener('keydown', tryPlay, { once: false });
+            document.addEventListener('touchstart', tryPlay, { once: false });
+          }
+        });
+      }
+      
       // Apply volume to a specific channel
+
       applyVolume(channel) {
         const audio = this.audioElements[channel];
         if (!audio) return;
@@ -535,8 +564,16 @@
           }
           
           if (this.audioElements.bgm && data.track) {
+            // Handle both formats: string URL or object with url property
+            const trackUrl = typeof data.track === 'string' ? data.track : data.track.url;
+            
+            if (!trackUrl) {
+              console.error('No valid track URL in data:', data);
+              return;
+            }
+            
             // Set the source
-            this.audioElements.bgm.src = data.track.url;
+            this.audioElements.bgm.src = trackUrl;
             
             // Store GM volume
             const dmVolume = data.volume !== undefined ? data.volume : 0.5;
@@ -553,14 +590,8 @@
               this.audioElements.bgm.currentTime = data.currentTime;
             }
             
-            // Play
-            this.audioElements.bgm.play().catch(e => {
-              console.error('BGM play error:', e);
-              // Try to play on user interaction
-              document.addEventListener('click', () => {
-                this.audioElements.bgm.play().catch(err => console.log('Still blocked:', err));
-              }, { once: true });
-            });
+            // Play with proper error handling
+            this.playAudioWithFallback(this.audioElements.bgm, 'BGM');
           }
         });
         
@@ -600,8 +631,16 @@
           }
           
           if (this.audioElements.ambience && data.track) {
+            // Handle both formats: string URL or object with url property
+            const trackUrl = typeof data.track === 'string' ? data.track : data.track.url;
+            
+            if (!trackUrl) {
+              console.error('No valid track URL in data:', data);
+              return;
+            }
+            
             // Set the source
-            this.audioElements.ambience.src = data.track.url;
+            this.audioElements.ambience.src = trackUrl;
             
             // Store GM volume
             const dmVolume = data.volume !== undefined ? data.volume : 0.3;
@@ -618,13 +657,8 @@
               this.audioElements.ambience.currentTime = data.currentTime;
             }
             
-            // Play
-            this.audioElements.ambience.play().catch(e => {
-              console.error('Ambience play error:', e);
-              document.addEventListener('click', () => {
-                this.audioElements.ambience.play().catch(err => console.log('Still blocked:', err));
-              }, { once: true });
-            });
+            // Play with proper error handling
+            this.playAudioWithFallback(this.audioElements.ambience, 'Ambience');
           }
         });
         
@@ -653,13 +687,21 @@
         this.socket.on('sfx:play', (data) => {
           console.log('SFX Play event:', data);
           
-          if (!data || !data.url) {
+          if (!data) {
+            console.error('SFX data missing:', data);
+            return;
+          }
+          
+          // Handle both formats: string URL or object with url property
+          const trackUrl = typeof data === 'string' ? data : (data.url || (typeof data.track === 'string' ? data.track : data.track?.url));
+          
+          if (!trackUrl) {
             console.error('SFX data missing url:', data);
             return;
           }
           
           // Create new audio element for this SFX
-          const audio = new Audio(data.url);
+          const audio = new Audio(trackUrl);
           const dmVolume = data.volume !== undefined ? data.volume : 1.0;
           
           audio.dataset.dmVolume = dmVolume;
@@ -674,7 +716,7 @@
             this.audioElements.sfx.delete(id);
           });
           
-          audio.play().catch(e => console.error('SFX play error:', e));
+          this.playAudioWithFallback(audio, 'SFX');
         });
         
         // Master stop
@@ -707,12 +749,20 @@
               this.audioElements.bgm = document.getElementById('bgm-audio');
             }
             if (this.audioElements.bgm) {
-              this.audioElements.bgm.src = state.bgm.track.url;
+              // Handle both formats: string URL or object with url property
+              const trackUrl = typeof state.bgm.track === 'string' ? state.bgm.track : state.bgm.track.url;
+              
+              if (!trackUrl) {
+                console.error('No valid track URL in BGM state:', state.bgm.track);
+                return;
+              }
+              
+              this.audioElements.bgm.src = trackUrl;
               this.audioElements.bgm.dataset.dmVolume = state.bgm.volume;
               this.audioElements.bgm.volume = this.calculateVolume('bgm', state.bgm.volume);
               this.audioElements.bgm.loop = state.bgm.loop !== undefined ? state.bgm.loop : true;
               this.audioElements.bgm.currentTime = state.bgm.currentTime || 0;
-              this.audioElements.bgm.play().catch(e => console.error('BGM sync play error:', e));
+              this.playAudioWithFallback(this.audioElements.bgm, 'BGM');
             }
           }
           
@@ -722,12 +772,20 @@
               this.audioElements.ambience = document.getElementById('ambience-audio');
             }
             if (this.audioElements.ambience) {
-              this.audioElements.ambience.src = state.ambience.track.url;
+              // Handle both formats: string URL or object with url property
+              const trackUrl = typeof state.ambience.track === 'string' ? state.ambience.track : state.ambience.track.url;
+              
+              if (!trackUrl) {
+                console.error('No valid track URL in Ambience state:', state.ambience.track);
+                return;
+              }
+              
+              this.audioElements.ambience.src = trackUrl;
               this.audioElements.ambience.dataset.dmVolume = state.ambience.volume;
               this.audioElements.ambience.volume = this.calculateVolume('ambience', state.ambience.volume);
               this.audioElements.ambience.loop = state.ambience.loop !== undefined ? state.ambience.loop : true;
               this.audioElements.ambience.currentTime = state.ambience.currentTime || 0;
-              this.audioElements.ambience.play().catch(e => console.error('Ambience sync play error:', e));
+              this.playAudioWithFallback(this.audioElements.ambience, 'Ambience');
             }
           }
         });

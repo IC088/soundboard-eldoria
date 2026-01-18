@@ -192,7 +192,14 @@ io.on('connection', (socket) => {
 
   // BGM Controls
   socket.on('bgm:play', (data) => {
-    playbackState.bgm = { ...playbackState.bgm, ...data, playing: true };
+    // Store the full track object with URL
+    playbackState.bgm = {
+      ...playbackState.bgm,
+      ...data,
+      playing: true,
+      // Ensure track is an object with url property
+      track: typeof data.track === 'string' ? { url: data.track } : data.track
+    };
     io.emit('bgm:play', playbackState.bgm);
   });
 
@@ -223,7 +230,13 @@ io.on('connection', (socket) => {
 
   // Ambience Controls
   socket.on('ambience:play', (data) => {
-    playbackState.ambience = { ...playbackState.ambience, ...data, playing: true };
+    // Ensure track is an object with url property
+    playbackState.ambience = {
+      ...playbackState.ambience,
+      ...data,
+      playing: true,
+      track: typeof data.track === 'string' ? { url: data.track } : data.track
+    };
     io.emit('ambience:play', playbackState.ambience);
   });
 

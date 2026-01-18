@@ -258,6 +258,28 @@ io.on('connection', (socket) => {
     io.emit('master:stop');
   });
 
+  // Player volume controls (client-side only, no state changes)
+  // These events are just for logging/debugging - actual volume mixing happens client-side
+  socket.on('player:volume:master', (volume) => {
+    console.log(`Player ${socket.id} set master volume to ${volume}`);
+    // No broadcast needed - this is local to the player
+  });
+
+  socket.on('player:volume:bgm', (volume) => {
+    console.log(`Player ${socket.id} set BGM volume to ${volume}`);
+    // No broadcast needed - this is local to the player
+  });
+
+  socket.on('player:volume:ambience', (volume) => {
+    console.log(`Player ${socket.id} set ambience volume to ${volume}`);
+    // No broadcast needed - this is local to the player
+  });
+
+  socket.on('player:volume:sfx', (volume) => {
+    console.log(`Player ${socket.id} set SFX volume to ${volume}`);
+    // No broadcast needed - this is local to the player
+  });
+
   socket.on('disconnect', () => {
     if (socket.role === 'dm') {
       connectedClients.dm = null;

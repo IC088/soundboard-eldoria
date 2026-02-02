@@ -182,8 +182,28 @@ io.on('connection', (socket) => {
     } else {
       connectedClients.players.add(socket.id);
     }
-    // Send current state to new client
-    socket.emit('state:sync', playbackState);
+    
+    // Calculate current playback positions for syncing
+    const syncState = {
+      bgm: { ...playbackState.bgm },
+      ambience: { ...playbackState.ambience }
+    };
+    
+    // Calculate elapsed time for BGM if playing
+    if (playbackState.bgm.playing && playbackState.bgm.startTime) {
+      const elapsed = (Date.now() - playbackState.bgm.startTime) / 1000;
+      syncState.bgm.currentTime = (playbackState.bgm.currentTime || 0) + elapsed;
+    }
+    
+    // Calculate elapsed time for Ambience if playing
+    if (playbackState.ambience.playing && playbackState.ambience.startTime) {
+      const elapsed = (Date.now() - playbackState.ambience.startTime) / 1000;
+      syncState.ambience.currentTime = (playbackState.ambience.currentTime || 0) + elapsed;
+    }
+    
+    // Send current state to new client with calculated positions
+    socket.emit('state:sync', syncState);
+    
     io.emit('clients:update', {
       dm: !!connectedClients.dm,
       players: connectedClients.players.size
@@ -192,14 +212,7 @@ io.on('connection', (socket) => {
 
   // BGM Controls
   socket.on('bgm:play', (data) => {
-    // Store the full track object with URL
-    playbackState.bgm = {
-      ...playbackState.bgm,
-      ...data,
-      playing: true,
-      // Ensure track is an object with url property
-      track: typeof data.track === 'string' ? { url: data.track } : data.track
-    };
+    playbackState.bgm = { ...playbackState.bgm, ...data, playing: true, startTime: Date.now() };
     io.emit('bgm:play', playbackState.bgm);
   });
 
@@ -220,6 +233,7 @@ io.on('connection', (socket) => {
 
   socket.on('bgm:seek', (time) => {
     playbackState.bgm.currentTime = time;
+    playbackState.bgm.startTime = Date.now();
     io.emit('bgm:seek', time);
   });
 
@@ -228,15 +242,15 @@ io.on('connection', (socket) => {
     io.emit('bgm:loop', loop);
   });
 
+  // Update current time periodically (from DM)
+  socket.on('bgm:time-update', (currentTime) => {
+    playbackState.bgm.currentTime = currentTime;
+    playbackState.bgm.startTime = Date.now();
+  });
+
   // Ambience Controls
   socket.on('ambience:play', (data) => {
-    // Ensure track is an object with url property
-    playbackState.ambience = {
-      ...playbackState.ambience,
-      ...data,
-      playing: true,
-      track: typeof data.track === 'string' ? { url: data.track } : data.track
-    };
+    playbackState.ambience = { ...playbackState.ambience, ...data, playing: true, startTime: Date.now() };
     io.emit('ambience:play', playbackState.ambience);
   });
 
@@ -253,6 +267,12 @@ io.on('connection', (socket) => {
   socket.on('ambience:volume', (volume) => {
     playbackState.ambience.volume = volume;
     io.emit('ambience:volume', volume);
+  });
+
+  // Update current time periodically (from DM)
+  socket.on('ambience:time-update', (currentTime) => {
+    playbackState.ambience.currentTime = currentTime;
+    playbackState.ambience.startTime = Date.now();
   });
 
   // SFX - one-shot sounds
@@ -296,6 +316,23 @@ io.on('connection', (socket) => {
   socket.on('player:volume:sfx', (volume) => {
     console.log(`Player ${socket.id} set SFX volume to ${volume}`);
     // No broadcast needed - this is local to the player
+  });
+
+  // Real-time sync system
+  socket.on('sync:broadcast', (data) => {
+    // DM broadcasts current playback position to all players
+    if (socket.role === 'dm') {
+      socket.broadcast.emit('sync:broadcast', data);
+      console.log(`Sync broadcast from DM to ${connectedClients.players.size} players`);
+    }
+  });
+
+  socket.on('sync:request', () => {
+    // Player requests immediate sync from DM
+    if (connectedClients.dm) {
+      io.to(connectedClients.dm).emit('sync:request');
+      console.log(`Player ${socket.id} requested sync from DM`);
+    }
   });
 
   socket.on('disconnect', () => {

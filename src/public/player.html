@@ -699,37 +699,40 @@
         
         // State sync for new connections
         this.socket.on('state:sync', (state) => {
-          console.log('State sync:', state);
+          console.log('[PlayerVolumeControl] State sync received:', state);
           
           // Check if MusicSyncSystem is active
           if (window.musicSync) {
-            console.log('[PlayerVolumeControl] MusicSyncSystem active, skipping playback (sync will handle it)');
+            console.log('[PlayerVolumeControl] MusicSyncSystem is active - delegating playback to sync system');
             
-            // Only apply volume settings, let MusicSyncSystem handle playback
-            if (state.bgm && state.bgm.playing) {
+            // Only apply volume settings, MusicSyncSystem will handle playback
+            if (state.bgm) {
               if (!this.audioElements.bgm) {
                 this.audioElements.bgm = document.getElementById('bgm-audio');
               }
-              if (this.audioElements.bgm) {
+              if (this.audioElements.bgm && state.bgm.volume !== undefined) {
                 this.audioElements.bgm.dataset.dmVolume = state.bgm.volume;
-                this.audioElements.bgm.volume = this.calculateVolume('bgm', state.bgm.volume);
+                this.applyVolume('bgm');
               }
             }
             
-            if (state.ambience && state.ambience.playing) {
+            if (state.ambience) {
               if (!this.audioElements.ambience) {
                 this.audioElements.ambience = document.getElementById('ambience-audio');
               }
-              if (this.audioElements.ambience) {
+              if (this.audioElements.ambience && state.ambience.volume !== undefined) {
                 this.audioElements.ambience.dataset.dmVolume = state.ambience.volume;
-                this.audioElements.ambience.volume = this.calculateVolume('ambience', state.ambience.volume);
+                this.applyVolume('ambience');
               }
             }
             
+            console.log('[PlayerVolumeControl] Volumes applied, MusicSyncSystem will handle playback');
             return; // Let MusicSyncSystem handle the playback
           }
           
           // Original behavior if MusicSyncSystem not active
+          console.log('[PlayerVolumeControl] No MusicSyncSystem detected, handling state sync');
+          
           // Apply BGM state
           if (state.bgm && state.bgm.playing && state.bgm.track) {
             if (!this.audioElements.bgm) {
@@ -745,14 +748,14 @@
               const currentTime = state.bgm.currentTime || 0;
               this.audioElements.bgm.currentTime = currentTime;
               
-              console.log(`Syncing BGM to ${currentTime.toFixed(2)}s`);
+              console.log(`[PlayerVolumeControl] Syncing BGM to ${currentTime.toFixed(2)}s`);
               
               this.audioElements.bgm.play().catch(e => {
-                console.error('BGM sync play error:', e);
+                console.error('[PlayerVolumeControl] BGM sync play error:', e);
                 // Auto-retry on first click
                 document.addEventListener('click', () => {
                   this.audioElements.bgm.currentTime = currentTime;
-                  this.audioElements.bgm.play().catch(err => console.log('Still blocked:', err));
+                  this.audioElements.bgm.play().catch(err => console.log('[PlayerVolumeControl] Still blocked:', err));
                 }, { once: true });
               });
             }
@@ -773,14 +776,14 @@
               const currentTime = state.ambience.currentTime || 0;
               this.audioElements.ambience.currentTime = currentTime;
               
-              console.log(`Syncing Ambience to ${currentTime.toFixed(2)}s`);
+              console.log(`[PlayerVolumeControl] Syncing Ambience to ${currentTime.toFixed(2)}s`);
               
               this.audioElements.ambience.play().catch(e => {
-                console.error('Ambience sync play error:', e);
+                console.error('[PlayerVolumeControl] Ambience sync play error:', e);
                 // Auto-retry on first click
                 document.addEventListener('click', () => {
                   this.audioElements.ambience.currentTime = currentTime;
-                  this.audioElements.ambience.play().catch(err => console.log('Still blocked:', err));
+                  this.audioElements.ambience.play().catch(err => console.log('[PlayerVolumeControl] Still blocked:', err));
                 }, { once: true });
               });
             }

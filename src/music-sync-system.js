@@ -63,6 +63,22 @@ class MusicSyncSystem {
       this.handleSyncBroadcast(data);
     });
     
+    // Listen for initial state sync on connection (players only)
+    this.socket.on('state:sync', (state) => {
+      if (this.role === 'dm') return; // DM doesn't need state sync
+      
+      console.log('[Sync] Received state:sync on connection');
+      
+      // Treat state:sync like a sync broadcast with zero latency
+      const syncData = {
+        timestamp: Date.now(),
+        bgm: state.bgm,
+        ambience: state.ambience
+      };
+      
+      this.handleSyncBroadcast(syncData);
+    });
+    
     // Listen for manual sync requests
     this.socket.on('sync:request', () => {
       if (this.role === 'dm') {
@@ -156,12 +172,29 @@ class MusicSyncSystem {
   // Sync audio element to received state
   syncAudio(channel, state, latency) {
     const audio = this.audioElements[channel];
-    if (!audio) return;
+    if (!audio) {
+      console.log(`[Sync] ${channel.toUpperCase()} audio element not found`);
+      return;
+    }
+    
+    // Check if this channel is actually playing
+    if (!state || !state.isPlaying) {
+      console.log(`[Sync] ${channel.toUpperCase()} not playing, skipping`);
+      return;
+    }
+    
+    // Get the source URL - try multiple places
+    const srcUrl = state.src || (state.track && state.track.url) || null;
+    
+    if (!srcUrl) {
+      console.log(`[Sync] ${channel.toUpperCase()} has no source URL, skipping`);
+      return;
+    }
     
     // Set source if it's different
-    if (state.src && audio.src !== state.src) {
-      console.log(`[Sync] ${channel.toUpperCase()} setting source: ${state.src}`);
-      audio.src = state.src;
+    if (audio.src !== srcUrl) {
+      console.log(`[Sync] ${channel.toUpperCase()} setting source: ${srcUrl}`);
+      audio.src = srcUrl;
     }
     
     // Set loop
@@ -187,6 +220,7 @@ class MusicSyncSystem {
       audio.volume = window.playerVolumeControl.calculateVolume(channel, dmVolume);
     } else if (state.volume !== undefined) {
       audio.volume = state.volume;
+      audio.dataset.dmVolume = state.volume;
     }
     
     // If playing state changed

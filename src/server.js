@@ -201,6 +201,14 @@ io.on('connection', (socket) => {
       syncState.ambience.currentTime = (playbackState.ambience.currentTime || 0) + elapsed;
     }
     
+    // Add src URLs for MusicSyncSystem compatibility
+    if (syncState.bgm.track) {
+      syncState.bgm.src = syncState.bgm.track.url;
+    }
+    if (syncState.ambience.track) {
+      syncState.ambience.src = syncState.ambience.track.url;
+    }
+    
     // Send current state to new client with calculated positions
     socket.emit('state:sync', syncState);
     

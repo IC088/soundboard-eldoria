@@ -535,8 +535,18 @@
           }
           
           if (this.audioElements.bgm && data.track) {
+            // Handle both formats: track as string URL or track as object with url property
+            const trackUrl = typeof data.track === 'string' ? data.track : data.track.url;
+            
+            if (!trackUrl) {
+              console.error('[PlayerVolumeControl] BGM track URL is undefined:', data);
+              return;
+            }
+            
+            console.log('[PlayerVolumeControl] Setting BGM source to:', trackUrl);
+            
             // Set the source
-            this.audioElements.bgm.src = data.track.url;
+            this.audioElements.bgm.src = trackUrl;
             
             // Store GM volume
             const dmVolume = data.volume !== undefined ? data.volume : 0.5;
@@ -555,10 +565,10 @@
             
             // Play
             this.audioElements.bgm.play().catch(e => {
-              console.error('BGM play error:', e);
+              console.error('[PlayerVolumeControl] BGM play error:', e);
               // Try to play on user interaction
               document.addEventListener('click', () => {
-                this.audioElements.bgm.play().catch(err => console.log('Still blocked:', err));
+                this.audioElements.bgm.play().catch(err => console.log('[PlayerVolumeControl] Still blocked:', err));
               }, { once: true });
             });
           }
@@ -600,8 +610,18 @@
           }
           
           if (this.audioElements.ambience && data.track) {
+            // Handle both formats: track as string URL or track as object with url property
+            const trackUrl = typeof data.track === 'string' ? data.track : data.track.url;
+            
+            if (!trackUrl) {
+              console.error('[PlayerVolumeControl] Ambience track URL is undefined:', data);
+              return;
+            }
+            
+            console.log('[PlayerVolumeControl] Setting Ambience source to:', trackUrl);
+            
             // Set the source
-            this.audioElements.ambience.src = data.track.url;
+            this.audioElements.ambience.src = trackUrl;
             
             // Store GM volume
             const dmVolume = data.volume !== undefined ? data.volume : 0.3;
@@ -620,9 +640,9 @@
             
             // Play
             this.audioElements.ambience.play().catch(e => {
-              console.error('Ambience play error:', e);
+              console.error('[PlayerVolumeControl] Ambience play error:', e);
               document.addEventListener('click', () => {
-                this.audioElements.ambience.play().catch(err => console.log('Still blocked:', err));
+                this.audioElements.ambience.play().catch(err => console.log('[PlayerVolumeControl] Still blocked:', err));
               }, { once: true });
             });
           }
@@ -739,25 +759,30 @@
               this.audioElements.bgm = document.getElementById('bgm-audio');
             }
             if (this.audioElements.bgm) {
-              this.audioElements.bgm.src = state.bgm.track.url;
-              this.audioElements.bgm.dataset.dmVolume = state.bgm.volume;
-              this.audioElements.bgm.volume = this.calculateVolume('bgm', state.bgm.volume);
-              this.audioElements.bgm.loop = state.bgm.loop !== undefined ? state.bgm.loop : true;
+              // Handle both formats: track as string URL or track as object with url property
+              const trackUrl = typeof state.bgm.track === 'string' ? state.bgm.track : state.bgm.track.url;
               
-              // Set to current playback position (synced from server)
-              const currentTime = state.bgm.currentTime || 0;
-              this.audioElements.bgm.currentTime = currentTime;
-              
-              console.log(`[PlayerVolumeControl] Syncing BGM to ${currentTime.toFixed(2)}s`);
-              
-              this.audioElements.bgm.play().catch(e => {
-                console.error('[PlayerVolumeControl] BGM sync play error:', e);
-                // Auto-retry on first click
-                document.addEventListener('click', () => {
-                  this.audioElements.bgm.currentTime = currentTime;
-                  this.audioElements.bgm.play().catch(err => console.log('[PlayerVolumeControl] Still blocked:', err));
-                }, { once: true });
-              });
+              if (trackUrl) {
+                this.audioElements.bgm.src = trackUrl;
+                this.audioElements.bgm.dataset.dmVolume = state.bgm.volume;
+                this.audioElements.bgm.volume = this.calculateVolume('bgm', state.bgm.volume);
+                this.audioElements.bgm.loop = state.bgm.loop !== undefined ? state.bgm.loop : true;
+                
+                // Set to current playback position (synced from server)
+                const currentTime = state.bgm.currentTime || 0;
+                this.audioElements.bgm.currentTime = currentTime;
+                
+                console.log(`[PlayerVolumeControl] Syncing BGM to ${currentTime.toFixed(2)}s`);
+                
+                this.audioElements.bgm.play().catch(e => {
+                  console.error('[PlayerVolumeControl] BGM sync play error:', e);
+                  // Auto-retry on first click
+                  document.addEventListener('click', () => {
+                    this.audioElements.bgm.currentTime = currentTime;
+                    this.audioElements.bgm.play().catch(err => console.log('[PlayerVolumeControl] Still blocked:', err));
+                  }, { once: true });
+                });
+              }
             }
           }
           
@@ -767,25 +792,30 @@
               this.audioElements.ambience = document.getElementById('ambience-audio');
             }
             if (this.audioElements.ambience) {
-              this.audioElements.ambience.src = state.ambience.track.url;
-              this.audioElements.ambience.dataset.dmVolume = state.ambience.volume;
-              this.audioElements.ambience.volume = this.calculateVolume('ambience', state.ambience.volume);
-              this.audioElements.ambience.loop = state.ambience.loop !== undefined ? state.ambience.loop : true;
+              // Handle both formats: track as string URL or track as object with url property
+              const trackUrl = typeof state.ambience.track === 'string' ? state.ambience.track : state.ambience.track.url;
               
-              // Set to current playback position (synced from server)
-              const currentTime = state.ambience.currentTime || 0;
-              this.audioElements.ambience.currentTime = currentTime;
-              
-              console.log(`[PlayerVolumeControl] Syncing Ambience to ${currentTime.toFixed(2)}s`);
-              
-              this.audioElements.ambience.play().catch(e => {
-                console.error('[PlayerVolumeControl] Ambience sync play error:', e);
-                // Auto-retry on first click
-                document.addEventListener('click', () => {
-                  this.audioElements.ambience.currentTime = currentTime;
-                  this.audioElements.ambience.play().catch(err => console.log('[PlayerVolumeControl] Still blocked:', err));
-                }, { once: true });
-              });
+              if (trackUrl) {
+                this.audioElements.ambience.src = trackUrl;
+                this.audioElements.ambience.dataset.dmVolume = state.ambience.volume;
+                this.audioElements.ambience.volume = this.calculateVolume('ambience', state.ambience.volume);
+                this.audioElements.ambience.loop = state.ambience.loop !== undefined ? state.ambience.loop : true;
+                
+                // Set to current playback position (synced from server)
+                const currentTime = state.ambience.currentTime || 0;
+                this.audioElements.ambience.currentTime = currentTime;
+                
+                console.log(`[PlayerVolumeControl] Syncing Ambience to ${currentTime.toFixed(2)}s`);
+                
+                this.audioElements.ambience.play().catch(e => {
+                  console.error('[PlayerVolumeControl] Ambience sync play error:', e);
+                  // Auto-retry on first click
+                  document.addEventListener('click', () => {
+                    this.audioElements.ambience.currentTime = currentTime;
+                    this.audioElements.ambience.play().catch(err => console.log('[PlayerVolumeControl] Still blocked:', err));
+                  }, { once: true });
+                });
+              }
             }
           }
         });

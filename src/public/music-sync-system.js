@@ -67,7 +67,34 @@ class MusicSyncSystem {
     this.socket.on('state:sync', (state) => {
       if (this.role === 'dm') return; // DM doesn't need state sync
       
-      console.log('[Sync] Received state:sync on connection');
+      console.log('========================================');
+      console.log('🎯 [MusicSyncSystem] STATE:SYNC RECEIVED');
+      console.log('========================================');
+      console.log('Full state:', state);
+      console.log('BGM state:', state.bgm);
+      console.log('Ambience state:', state.ambience);
+      
+      if (state.bgm) {
+        console.log('BGM details:');
+        console.log('  - playing:', state.bgm.playing);
+        console.log('  - track:', state.bgm.track);
+        console.log('  - src:', state.bgm.src);
+        console.log('  - currentTime:', state.bgm.currentTime);
+        console.log('  - volume:', state.bgm.volume);
+        console.log('  - loop:', state.bgm.loop);
+      }
+      
+      if (state.ambience) {
+        console.log('Ambience details:');
+        console.log('  - playing:', state.ambience.playing);
+        console.log('  - track:', state.ambience.track);
+        console.log('  - src:', state.ambience.src);
+        console.log('  - currentTime:', state.ambience.currentTime);
+        console.log('  - volume:', state.ambience.volume);
+        console.log('  - loop:', state.ambience.loop);
+      }
+      
+      console.log('========================================');
       
       // Treat state:sync like a sync broadcast with zero latency
       const syncData = {
@@ -76,6 +103,7 @@ class MusicSyncSystem {
         ambience: state.ambience
       };
       
+      console.log('[MusicSyncSystem] Calling handleSyncBroadcast with state:sync data');
       this.handleSyncBroadcast(syncData);
     });
     
@@ -171,40 +199,56 @@ class MusicSyncSystem {
   
   // Sync audio element to received state
   syncAudio(channel, state, latency) {
+    console.log(`\n🎵 [MusicSyncSystem] syncAudio called for ${channel.toUpperCase()}`);
+    console.log('  - state:', state);
+    console.log('  - latency:', latency + 'ms');
+    
     const audio = this.audioElements[channel];
     if (!audio) {
-      console.log(`[Sync] ${channel.toUpperCase()} audio element not found`);
+      console.log(`  ❌ ${channel.toUpperCase()} audio element not found`);
       return;
     }
     
     // Check if this channel is actually playing
     if (!state || !state.isPlaying) {
-      console.log(`[Sync] ${channel.toUpperCase()} not playing, skipping`);
+      console.log(`  ⏸️  ${channel.toUpperCase()} not playing, skipping`);
       return;
     }
     
     // Get the source URL - try multiple places
-    const srcUrl = state.src || (state.track && state.track.url) || null;
+    const srcUrl = state.src || (state.track && (typeof state.track === 'string' ? state.track : state.track.url)) || null;
+    
+    console.log('  - Extracted srcUrl:', srcUrl);
     
     if (!srcUrl) {
-      console.log(`[Sync] ${channel.toUpperCase()} has no source URL, skipping`);
+      console.log(`  ❌ ${channel.toUpperCase()} has no source URL, skipping`);
+      console.log('     state.src:', state.src);
+      console.log('     state.track:', state.track);
       return;
     }
     
     // Set source if it's different
     if (audio.src !== srcUrl) {
-      console.log(`[Sync] ${channel.toUpperCase()} setting source: ${srcUrl}`);
+      console.log(`  📥 ${channel.toUpperCase()} setting source: ${srcUrl}`);
       audio.src = srcUrl;
+    } else {
+      console.log(`  ✓ ${channel.toUpperCase()} source already set`);
     }
     
     // Set loop
     if (state.loop !== undefined) {
       audio.loop = state.loop;
+      console.log(`  🔁 ${channel.toUpperCase()} loop: ${state.loop}`);
     }
     
     // Calculate target time (accounting for network latency)
     const latencySeconds = latency / 1000;
     const targetTime = state.currentTime + latencySeconds;
+    
+    console.log(`  ⏱️  ${channel.toUpperCase()} timing:`);
+    console.log('     - state.currentTime:', state.currentTime);
+    console.log('     - latencySeconds:', latencySeconds);
+    console.log('     - targetTime:', targetTime);
     
     // Store sync state
     this.syncState[channel] = {
@@ -218,37 +262,45 @@ class MusicSyncSystem {
     if (window.playerVolumeControl && audio.dataset.dmVolume) {
       const dmVolume = parseFloat(audio.dataset.dmVolume);
       audio.volume = window.playerVolumeControl.calculateVolume(channel, dmVolume);
+      console.log(`  🔊 ${channel.toUpperCase()} volume: ${audio.volume.toFixed(2)} (from PlayerVolumeControl)`);
     } else if (state.volume !== undefined) {
       audio.volume = state.volume;
       audio.dataset.dmVolume = state.volume;
+      console.log(`  🔊 ${channel.toUpperCase()} volume: ${audio.volume.toFixed(2)} (from state)`);
     }
     
     // If playing state changed
     if (state.isPlaying && audio.paused) {
-      console.log(`[Sync] ${channel.toUpperCase()} starting playback at ${targetTime.toFixed(2)}s`);
+      console.log(`  ▶️  ${channel.toUpperCase()} starting playback at ${targetTime.toFixed(2)}s`);
       audio.currentTime = targetTime;
       audio.play().catch(e => {
-        console.error(`[Sync] Play error:`, e);
+        console.error(`  ❌ [Sync] Play error:`, e);
         // Retry on user interaction
         document.addEventListener('click', () => {
+          console.log(`  🔄 Retrying ${channel.toUpperCase()} playback after user click`);
           audio.currentTime = targetTime;
-          audio.play().catch(err => console.log('[Sync] Still blocked:', err));
+          audio.play().catch(err => console.log(`  ❌ [Sync] Still blocked:`, err));
         }, { once: true });
       });
     } else if (!state.isPlaying && !audio.paused) {
-      console.log(`[Sync] ${channel.toUpperCase()} pausing`);
+      console.log(`  ⏸️  ${channel.toUpperCase()} pausing`);
       audio.pause();
+    } else if (!audio.paused) {
+      console.log(`  ✓ ${channel.toUpperCase()} already playing`);
     }
     
     // If already playing, check for drift
     if (state.isPlaying && !audio.paused) {
       const currentDrift = Math.abs(audio.currentTime - targetTime);
+      console.log(`  📊 ${channel.toUpperCase()} drift check: ${currentDrift.toFixed(3)}s`);
       
       if (currentDrift > this.SYNC_TOLERANCE) {
-        console.log(`[Sync] ${channel.toUpperCase()} drift detected: ${currentDrift.toFixed(2)}s, resyncing to ${targetTime.toFixed(2)}s`);
+        console.log(`  🔄 ${channel.toUpperCase()} drift detected: ${currentDrift.toFixed(2)}s, resyncing to ${targetTime.toFixed(2)}s`);
         audio.currentTime = targetTime;
       }
     }
+    
+    console.log(`✅ [MusicSyncSystem] syncAudio complete for ${channel.toUpperCase()}\n`);
   }
   
   // Player: Check for drift and correct

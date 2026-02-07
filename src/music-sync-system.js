@@ -158,6 +158,17 @@ class MusicSyncSystem {
     const audio = this.audioElements[channel];
     if (!audio) return;
     
+    // Set source if it's different
+    if (state.src && audio.src !== state.src) {
+      console.log(`[Sync] ${channel.toUpperCase()} setting source: ${state.src}`);
+      audio.src = state.src;
+    }
+    
+    // Set loop
+    if (state.loop !== undefined) {
+      audio.loop = state.loop;
+    }
+    
     // Calculate target time (accounting for network latency)
     const latencySeconds = latency / 1000;
     const targetTime = state.currentTime + latencySeconds;
@@ -170,11 +181,26 @@ class MusicSyncSystem {
       syncedAt: Date.now()
     };
     
+    // Apply volume from PlayerVolumeControl if it exists
+    if (window.playerVolumeControl && audio.dataset.dmVolume) {
+      const dmVolume = parseFloat(audio.dataset.dmVolume);
+      audio.volume = window.playerVolumeControl.calculateVolume(channel, dmVolume);
+    } else if (state.volume !== undefined) {
+      audio.volume = state.volume;
+    }
+    
     // If playing state changed
     if (state.isPlaying && audio.paused) {
       console.log(`[Sync] ${channel.toUpperCase()} starting playback at ${targetTime.toFixed(2)}s`);
       audio.currentTime = targetTime;
-      audio.play().catch(e => console.error(`[Sync] Play error:`, e));
+      audio.play().catch(e => {
+        console.error(`[Sync] Play error:`, e);
+        // Retry on user interaction
+        document.addEventListener('click', () => {
+          audio.currentTime = targetTime;
+          audio.play().catch(err => console.log('[Sync] Still blocked:', err));
+        }, { once: true });
+      });
     } else if (!state.isPlaying && !audio.paused) {
       console.log(`[Sync] ${channel.toUpperCase()} pausing`);
       audio.pause();

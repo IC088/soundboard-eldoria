@@ -73,17 +73,6 @@
       50% { opacity: 0.5; }
     }
 
-    @keyframes slideDown {
-      from {
-        transform: translateX(-50%) translateY(-20px);
-        opacity: 0;
-      }
-      to {
-        transform: translateX(-50%) translateY(0);
-        opacity: 1;
-      }
-    }
-
     /* Volume Panel Styles */
     .volume-panel {
       background: rgba(30, 30, 30, 0.95);
@@ -405,108 +394,14 @@
           sfx: new Map() // SFX are one-shot, so we track multiple
         };
         
-        // Gesture unlock state - tracks if user has interacted with page
-        this.gestureUnlocked = false;
-        this.pendingPlays = []; // Queue of audio plays waiting for gesture
-        
         // Load saved preferences from localStorage
         this.loadPreferences();
         
         // Setup UI controls
         this.setupUI();
         
-        // Setup gesture detection
-        this.setupGestureDetection();
-        
         // Setup socket listeners
         this.setupSocketListeners();
-      }
-      
-      // Detect first user gesture to unlock autoplay
-      setupGestureDetection() {
-        const unlock = () => {
-          if (!this.gestureUnlocked) {
-            console.log('🔓 User gesture detected - autoplay unlocked!');
-            this.gestureUnlocked = true;
-            
-            // Show notice that we're ready
-            this.showUnlockedNotice();
-            
-            // Process any pending plays
-            this.processPendingPlays();
-            
-            // Remove listeners after unlocking
-            document.removeEventListener('click', unlock, { capture: true });
-            document.removeEventListener('keydown', unlock, { capture: true });
-            document.removeEventListener('touchstart', unlock, { capture: true });
-            document.removeEventListener('mousedown', unlock, { capture: true });
-          }
-        };
-        
-        // Listen for user interaction
-        document.addEventListener('click', unlock, { capture: true });
-        document.addEventListener('keydown', unlock, { capture: true });
-        document.addEventListener('touchstart', unlock, { capture: true });
-        document.addEventListener('mousedown', unlock, { capture: true });
-        
-        // Show initial message
-        this.showInitialNotice();
-      }
-      
-      // Show initial notice about needing user interaction
-      showInitialNotice() {
-        const notice = document.createElement('div');
-        notice.id = 'gesture-notice';
-        notice.style.cssText = `
-          position: fixed;
-          top: 20px;
-          left: 50%;
-          transform: translateX(-50%);
-          background: rgba(255, 180, 50, 0.9);
-          color: #000;
-          padding: 12px 20px;
-          border-radius: 5px;
-          font-weight: bold;
-          z-index: 10000;
-          animation: slideDown 0.3s ease;
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-        `;
-        notice.textContent = '👋 Click anywhere to enable audio';
-        document.body.appendChild(notice);
-      }
-      
-      // Show unlocked notice
-      showUnlockedNotice() {
-        const notice = document.getElementById('gesture-notice');
-        if (notice) {
-          notice.textContent = '🔊 Audio enabled! Ready for sound';
-          notice.style.background = 'rgba(76, 175, 80, 0.9)';
-          setTimeout(() => notice.remove(), 3000);
-        }
-      }
-      
-      // Queue a play request
-      queuePlay(audio, label) {
-        this.pendingPlays.push({ audio, label });
-      }
-      
-      // Process all pending plays
-      processPendingPlays() {
-        while (this.pendingPlays.length > 0) {
-          const { audio, label } = this.pendingPlays.shift();
-          this.attemptPlay(audio, label);
-        }
-      }
-      
-      // Attempt to play audio (should only be called after gesture unlock or from socket events after unlock)
-      attemptPlay(audio, label) {
-        audio.play()
-          .then(() => {
-            console.log(`✅ ${label} playing successfully`);
-          })
-          .catch(e => {
-            console.error(`❌ ${label} play error:`, e);
-          });
       }
       
       // Load player preferences from localStorage
@@ -607,19 +502,7 @@
         return this.volumes.master * this.volumes[channel] * dmVolume;
       }
       
-      // Play audio with gesture unlock awareness
-      playAudioWithFallback(audio, label) {
-        if (!this.gestureUnlocked) {
-          console.log(`⏸️ ${label} queued - waiting for user interaction...`);
-          this.queuePlay(audio, label);
-          return;
-        }
-        
-        this.attemptPlay(audio, label);
-      }
-      
       // Apply volume to a specific channel
-
       applyVolume(channel) {
         const audio = this.audioElements[channel];
         if (!audio) return;
@@ -652,16 +535,8 @@
           }
           
           if (this.audioElements.bgm && data.track) {
-            // Handle both formats: string URL or object with url property
-            const trackUrl = typeof data.track === 'string' ? data.track : data.track.url;
-            
-            if (!trackUrl) {
-              console.error('No valid track URL in data:', data);
-              return;
-            }
-            
             // Set the source
-            this.audioElements.bgm.src = trackUrl;
+            this.audioElements.bgm.src = data.track.url;
             
             // Store GM volume
             const dmVolume = data.volume !== undefined ? data.volume : 0.5;
@@ -678,8 +553,14 @@
               this.audioElements.bgm.currentTime = data.currentTime;
             }
             
-            // Play with proper error handling
-            this.playAudioWithFallback(this.audioElements.bgm, 'BGM');
+            // Play
+            this.audioElements.bgm.play().catch(e => {
+              console.error('BGM play error:', e);
+              // Try to play on user interaction
+              document.addEventListener('click', () => {
+                this.audioElements.bgm.play().catch(err => console.log('Still blocked:', err));
+              }, { once: true });
+            });
           }
         });
         
@@ -719,16 +600,8 @@
           }
           
           if (this.audioElements.ambience && data.track) {
-            // Handle both formats: string URL or object with url property
-            const trackUrl = typeof data.track === 'string' ? data.track : data.track.url;
-            
-            if (!trackUrl) {
-              console.error('No valid track URL in data:', data);
-              return;
-            }
-            
             // Set the source
-            this.audioElements.ambience.src = trackUrl;
+            this.audioElements.ambience.src = data.track.url;
             
             // Store GM volume
             const dmVolume = data.volume !== undefined ? data.volume : 0.3;
@@ -745,8 +618,13 @@
               this.audioElements.ambience.currentTime = data.currentTime;
             }
             
-            // Play with proper error handling
-            this.playAudioWithFallback(this.audioElements.ambience, 'Ambience');
+            // Play
+            this.audioElements.ambience.play().catch(e => {
+              console.error('Ambience play error:', e);
+              document.addEventListener('click', () => {
+                this.audioElements.ambience.play().catch(err => console.log('Still blocked:', err));
+              }, { once: true });
+            });
           }
         });
         
@@ -775,21 +653,13 @@
         this.socket.on('sfx:play', (data) => {
           console.log('SFX Play event:', data);
           
-          if (!data) {
-            console.error('SFX data missing:', data);
-            return;
-          }
-          
-          // Handle both formats: string URL or object with url property
-          const trackUrl = typeof data === 'string' ? data : (data.url || (typeof data.track === 'string' ? data.track : data.track?.url));
-          
-          if (!trackUrl) {
+          if (!data || !data.url) {
             console.error('SFX data missing url:', data);
             return;
           }
           
           // Create new audio element for this SFX
-          const audio = new Audio(trackUrl);
+          const audio = new Audio(data.url);
           const dmVolume = data.volume !== undefined ? data.volume : 1.0;
           
           audio.dataset.dmVolume = dmVolume;
@@ -804,7 +674,7 @@
             this.audioElements.sfx.delete(id);
           });
           
-          this.playAudioWithFallback(audio, 'SFX');
+          audio.play().catch(e => console.error('SFX play error:', e));
         });
         
         // Master stop
@@ -831,26 +701,60 @@
         this.socket.on('state:sync', (state) => {
           console.log('State sync:', state);
           
+          // Check if MusicSyncSystem is active
+          if (window.musicSync) {
+            console.log('[PlayerVolumeControl] MusicSyncSystem active, skipping playback (sync will handle it)');
+            
+            // Only apply volume settings, let MusicSyncSystem handle playback
+            if (state.bgm && state.bgm.playing) {
+              if (!this.audioElements.bgm) {
+                this.audioElements.bgm = document.getElementById('bgm-audio');
+              }
+              if (this.audioElements.bgm) {
+                this.audioElements.bgm.dataset.dmVolume = state.bgm.volume;
+                this.audioElements.bgm.volume = this.calculateVolume('bgm', state.bgm.volume);
+              }
+            }
+            
+            if (state.ambience && state.ambience.playing) {
+              if (!this.audioElements.ambience) {
+                this.audioElements.ambience = document.getElementById('ambience-audio');
+              }
+              if (this.audioElements.ambience) {
+                this.audioElements.ambience.dataset.dmVolume = state.ambience.volume;
+                this.audioElements.ambience.volume = this.calculateVolume('ambience', state.ambience.volume);
+              }
+            }
+            
+            return; // Let MusicSyncSystem handle the playback
+          }
+          
+          // Original behavior if MusicSyncSystem not active
           // Apply BGM state
           if (state.bgm && state.bgm.playing && state.bgm.track) {
             if (!this.audioElements.bgm) {
               this.audioElements.bgm = document.getElementById('bgm-audio');
             }
             if (this.audioElements.bgm) {
-              // Handle both formats: string URL or object with url property
-              const trackUrl = typeof state.bgm.track === 'string' ? state.bgm.track : state.bgm.track.url;
-              
-              if (!trackUrl) {
-                console.error('No valid track URL in BGM state:', state.bgm.track);
-                return;
-              }
-              
-              this.audioElements.bgm.src = trackUrl;
+              this.audioElements.bgm.src = state.bgm.track.url;
               this.audioElements.bgm.dataset.dmVolume = state.bgm.volume;
               this.audioElements.bgm.volume = this.calculateVolume('bgm', state.bgm.volume);
               this.audioElements.bgm.loop = state.bgm.loop !== undefined ? state.bgm.loop : true;
-              this.audioElements.bgm.currentTime = state.bgm.currentTime || 0;
-              this.playAudioWithFallback(this.audioElements.bgm, 'BGM');
+              
+              // Set to current playback position (synced from server)
+              const currentTime = state.bgm.currentTime || 0;
+              this.audioElements.bgm.currentTime = currentTime;
+              
+              console.log(`Syncing BGM to ${currentTime.toFixed(2)}s`);
+              
+              this.audioElements.bgm.play().catch(e => {
+                console.error('BGM sync play error:', e);
+                // Auto-retry on first click
+                document.addEventListener('click', () => {
+                  this.audioElements.bgm.currentTime = currentTime;
+                  this.audioElements.bgm.play().catch(err => console.log('Still blocked:', err));
+                }, { once: true });
+              });
             }
           }
           
@@ -860,20 +764,25 @@
               this.audioElements.ambience = document.getElementById('ambience-audio');
             }
             if (this.audioElements.ambience) {
-              // Handle both formats: string URL or object with url property
-              const trackUrl = typeof state.ambience.track === 'string' ? state.ambience.track : state.ambience.track.url;
-              
-              if (!trackUrl) {
-                console.error('No valid track URL in Ambience state:', state.ambience.track);
-                return;
-              }
-              
-              this.audioElements.ambience.src = trackUrl;
+              this.audioElements.ambience.src = state.ambience.track.url;
               this.audioElements.ambience.dataset.dmVolume = state.ambience.volume;
               this.audioElements.ambience.volume = this.calculateVolume('ambience', state.ambience.volume);
               this.audioElements.ambience.loop = state.ambience.loop !== undefined ? state.ambience.loop : true;
-              this.audioElements.ambience.currentTime = state.ambience.currentTime || 0;
-              this.playAudioWithFallback(this.audioElements.ambience, 'Ambience');
+              
+              // Set to current playback position (synced from server)
+              const currentTime = state.ambience.currentTime || 0;
+              this.audioElements.ambience.currentTime = currentTime;
+              
+              console.log(`Syncing Ambience to ${currentTime.toFixed(2)}s`);
+              
+              this.audioElements.ambience.play().catch(e => {
+                console.error('Ambience sync play error:', e);
+                // Auto-retry on first click
+                document.addEventListener('click', () => {
+                  this.audioElements.ambience.currentTime = currentTime;
+                  this.audioElements.ambience.play().catch(err => console.log('Still blocked:', err));
+                }, { once: true });
+              });
             }
           }
         });

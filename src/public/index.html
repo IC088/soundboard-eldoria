@@ -1145,13 +1145,22 @@
       progress.style.display = 'block';
       
       audio.play();
-      socket.emit(`${channel}:play`, { track: url, name, volume: audio.volume });
       updatePlayButton(channel, true);
       
       // Progress updates
       audio.ontimeupdate = () => updateProgress(channel);
+
+      // Defer emit until metadata is loaded so duration is available
       audio.onloadedmetadata = () => {
         document.getElementById(`${channel}-duration`).textContent = formatTime(audio.duration);
+        socket.emit(`${channel}:play`, {
+          track: url,
+          name,
+          volume: audio.volume,
+          duration: audio.duration,
+          currentTime: audio.currentTime,
+          loop: audio.loop
+        });
       };
     }
 
@@ -1159,7 +1168,12 @@
       const audio = audioElements[channel];
       if (audio.paused) {
         audio.play();
-        socket.emit(`${channel}:play`, { track: audio.src, currentTime: audio.currentTime });
+        socket.emit(`${channel}:play`, {
+          track: audio.src,
+          currentTime: audio.currentTime,
+          duration: audio.duration,
+          loop: audio.loop
+        });
         updatePlayButton(channel, true);
       } else {
         audio.pause();

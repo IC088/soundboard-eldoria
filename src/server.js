@@ -71,19 +71,27 @@ app.get('/player.js', (req, res) => {
 
 // Current playback state
 // playbackStartedAt: server timestamp (ms) when play began at currentTime.
+// duration: track length in seconds — used to wrap elapsed time on loop.
 // Used to compute live elapsed position for late-joining players.
 let playbackState = {
-  bgm:      { track: null, playing: false, volume: 0.5, currentTime: 0, loop: true, playbackStartedAt: null },
-  ambience: { track: null, playing: false, volume: 0.3, currentTime: 0, loop: true, playbackStartedAt: null },
+  bgm:      { track: null, playing: false, volume: 0.5, currentTime: 0, loop: true, duration: null, playbackStartedAt: null },
+  ambience: { track: null, playing: false, volume: 0.3, currentTime: 0, loop: true, duration: null, playbackStartedAt: null },
   sfx: []
 };
 
 // Returns the live currentTime for a channel, accounting for elapsed wall-clock time since play started.
+// For looping tracks, wraps elapsed time using modulo against track duration.
 function getLiveCurrentTime(channel) {
   const ch = playbackState[channel];
   if (!ch.playing || ch.playbackStartedAt === null) return ch.currentTime;
   const elapsed = (Date.now() - ch.playbackStartedAt) / 1000;
-  return ch.currentTime + elapsed;
+  const raw = ch.currentTime + elapsed;
+  // If looping and we know the duration, wrap the position so late joiners
+  // land at the correct point in the current loop rather than past the end
+  if (ch.loop && ch.duration && ch.duration > 0) {
+    return raw % ch.duration;
+  }
+  return raw;
 }
 
 // Builds a state snapshot with live currentTime injected — safe to send to clients.
@@ -256,7 +264,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('bgm:stop', () => {
-    playbackState.bgm = { track: null, playing: false, volume: playbackState.bgm.volume, currentTime: 0, loop: true, playbackStartedAt: null };
+    playbackState.bgm = { track: null, playing: false, volume: playbackState.bgm.volume, currentTime: 0, loop: true, duration: null, playbackStartedAt: null };
     io.emit('bgm:stop');
   });
 
@@ -304,7 +312,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('ambience:stop', () => {
-    playbackState.ambience = { track: null, playing: false, volume: playbackState.ambience.volume, currentTime: 0, loop: true, playbackStartedAt: null };
+    playbackState.ambience = { track: null, playing: false, volume: playbackState.ambience.volume, currentTime: 0, loop: true, duration: null, playbackStartedAt: null };
     io.emit('ambience:stop');
   });
 
@@ -329,8 +337,8 @@ io.on('connection', (socket) => {
 
   // Master controls
   socket.on('master:stop', () => {
-    playbackState.bgm      = { track: null, playing: false, volume: playbackState.bgm.volume,      currentTime: 0, loop: true, playbackStartedAt: null };
-    playbackState.ambience = { track: null, playing: false, volume: playbackState.ambience.volume, currentTime: 0, loop: true, playbackStartedAt: null };
+    playbackState.bgm      = { track: null, playing: false, volume: playbackState.bgm.volume,      currentTime: 0, loop: true, duration: null, playbackStartedAt: null };
+    playbackState.ambience = { track: null, playing: false, volume: playbackState.ambience.volume, currentTime: 0, loop: true, duration: null, playbackStartedAt: null };
     io.emit('master:stop');
   });
 

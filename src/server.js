@@ -70,11 +70,29 @@ app.get('/player.js', (req, res) => {
 });
 
 // Current playback state
+// playbackStartedAt: server timestamp (ms) when play began at currentTime.
+// Used to compute live elapsed position for late-joining players.
 let playbackState = {
-  bgm: { track: null, playing: false, volume: 0.5, currentTime: 0, loop: true },
-  ambience: { track: null, playing: false, volume: 0.3, currentTime: 0, loop: true },
-  sfx: [] // One-shot sounds
+  bgm:      { track: null, playing: false, volume: 0.5, currentTime: 0, loop: true, playbackStartedAt: null },
+  ambience: { track: null, playing: false, volume: 0.3, currentTime: 0, loop: true, playbackStartedAt: null },
+  sfx: []
 };
+
+// Returns the live currentTime for a channel, accounting for elapsed wall-clock time since play started.
+function getLiveCurrentTime(channel) {
+  const ch = playbackState[channel];
+  if (!ch.playing || ch.playbackStartedAt === null) return ch.currentTime;
+  const elapsed = (Date.now() - ch.playbackStartedAt) / 1000;
+  return ch.currentTime + elapsed;
+}
+
+// Builds a state snapshot with live currentTime injected — safe to send to clients.
+function getLiveState() {
+  return {
+    bgm:      { ...playbackState.bgm,      currentTime: getLiveCurrentTime('bgm') },
+    ambience: { ...playbackState.ambience, currentTime: getLiveCurrentTime('ambience') }
+  };
+}
 
 let connectedClients = { dm: null, players: new Set() };
 
@@ -206,32 +224,39 @@ io.on('connection', (socket) => {
       connectedClients.players.add(socket.id);
       playerSyncState.set(socket.id, { syncMode: 'LIVE', pausedAt: null, name: name || socket.id });
     }
-    // Send current state to new client
-    socket.emit('state:sync', playbackState);
+    // Send live state (with computed currentTime) to new client
+    socket.emit('state:sync', getLiveState());
     broadcastClientUpdate();
   });
 
   // BGM Controls
   socket.on('bgm:play', (data) => {
-    playbackState.bgm = { ...playbackState.bgm, ...data, playing: true };
+    playbackState.bgm = {
+      ...playbackState.bgm,
+      ...data,
+      playing: true,
+      playbackStartedAt: Date.now()   // clock starts now at data.currentTime
+    };
     io.emit('bgm:play', playbackState.bgm);
     // Force paused players back to live on track change (dramatic reveals shouldn't be missable)
     playerSyncState.forEach((state, id) => {
       if (state.syncMode === 'PAUSED') {
         playerSyncState.set(id, { syncMode: 'LIVE', pausedAt: null });
-        io.to(id).emit('player:force:rejoin', playbackState);
+        io.to(id).emit('player:force:rejoin', getLiveState());
       }
     });
     broadcastClientUpdate();
   });
 
   socket.on('bgm:pause', () => {
+    playbackState.bgm.currentTime = getLiveCurrentTime('bgm');
     playbackState.bgm.playing = false;
+    playbackState.bgm.playbackStartedAt = null;
     io.emit('bgm:pause');
   });
 
   socket.on('bgm:stop', () => {
-    playbackState.bgm = { track: null, playing: false, volume: playbackState.bgm.volume, currentTime: 0, loop: true };
+    playbackState.bgm = { track: null, playing: false, volume: playbackState.bgm.volume, currentTime: 0, loop: true, playbackStartedAt: null };
     io.emit('bgm:stop');
   });
 
@@ -242,6 +267,8 @@ io.on('connection', (socket) => {
 
   socket.on('bgm:seek', (time) => {
     playbackState.bgm.currentTime = time;
+    // Reset the clock reference so elapsed time is calculated from the new position
+    if (playbackState.bgm.playing) playbackState.bgm.playbackStartedAt = Date.now();
     io.emit('bgm:seek', time);
   });
 
@@ -252,25 +279,32 @@ io.on('connection', (socket) => {
 
   // Ambience Controls
   socket.on('ambience:play', (data) => {
-    playbackState.ambience = { ...playbackState.ambience, ...data, playing: true };
+    playbackState.ambience = {
+      ...playbackState.ambience,
+      ...data,
+      playing: true,
+      playbackStartedAt: Date.now()
+    };
     io.emit('ambience:play', playbackState.ambience);
     // Force paused players back to live on track change
     playerSyncState.forEach((state, id) => {
       if (state.syncMode === 'PAUSED') {
         playerSyncState.set(id, { syncMode: 'LIVE', pausedAt: null });
-        io.to(id).emit('player:force:rejoin', playbackState);
+        io.to(id).emit('player:force:rejoin', getLiveState());
       }
     });
     broadcastClientUpdate();
   });
 
   socket.on('ambience:pause', () => {
+    playbackState.ambience.currentTime = getLiveCurrentTime('ambience');
     playbackState.ambience.playing = false;
+    playbackState.ambience.playbackStartedAt = null;
     io.emit('ambience:pause');
   });
 
   socket.on('ambience:stop', () => {
-    playbackState.ambience = { track: null, playing: false, volume: playbackState.ambience.volume, currentTime: 0, loop: true };
+    playbackState.ambience = { track: null, playing: false, volume: playbackState.ambience.volume, currentTime: 0, loop: true, playbackStartedAt: null };
     io.emit('ambience:stop');
   });
 
@@ -295,8 +329,8 @@ io.on('connection', (socket) => {
 
   // Master controls
   socket.on('master:stop', () => {
-    playbackState.bgm = { track: null, playing: false, volume: playbackState.bgm.volume, currentTime: 0, loop: true };
-    playbackState.ambience = { track: null, playing: false, volume: playbackState.ambience.volume, currentTime: 0, loop: true };
+    playbackState.bgm      = { track: null, playing: false, volume: playbackState.bgm.volume,      currentTime: 0, loop: true, playbackStartedAt: null };
+    playbackState.ambience = { track: null, playing: false, volume: playbackState.ambience.volume, currentTime: 0, loop: true, playbackStartedAt: null };
     io.emit('master:stop');
   });
 
@@ -335,8 +369,8 @@ io.on('connection', (socket) => {
     if (playerSyncState.has(socket.id)) {
       playerSyncState.set(socket.id, { syncMode: 'LIVE', pausedAt: null });
       console.log(`Player ${socket.id} rejoining live sync`);
-      // Send authoritative current state so player can snap to live position
-      socket.emit('player:rejoin:state', playbackState);
+      // Send live authoritative state so player snaps to correct position
+      socket.emit('player:rejoin:state', getLiveState());
       broadcastClientUpdate();
     }
   });

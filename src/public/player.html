@@ -73,7 +73,198 @@
       50% { opacity: 0.5; }
     }
 
-    /* Volume Panel Styles */
+    /* Login Overlay */
+    #login-overlay {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, #2c1810 0%, #1a0f08 100%);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    #login-overlay.hidden {
+      display: none;
+    }
+
+    .login-card {
+      background: rgba(30, 20, 10, 0.95);
+      border: 2px solid rgba(255, 180, 50, 0.4);
+      border-radius: 16px;
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+      box-shadow: 0 0 60px rgba(255, 180, 50, 0.1);
+    }
+
+    .login-card .login-icon {
+      font-size: 3em;
+      margin-bottom: 12px;
+    }
+
+    .login-card h2 {
+      color: #ffb432;
+      font-size: 1.8em;
+      margin-bottom: 6px;
+      text-shadow: 0 0 20px rgba(255, 180, 50, 0.4);
+    }
+
+    .login-card p {
+      color: rgba(255, 255, 255, 0.6);
+      margin-bottom: 28px;
+      font-size: 1em;
+    }
+
+    .login-card input[type="text"] {
+      width: 100%;
+      padding: 14px 18px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid rgba(255, 180, 50, 0.3);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 1.1em;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.3s, box-shadow 0.3s;
+      margin-bottom: 16px;
+    }
+
+    .login-card input[type="text"]::placeholder {
+      color: rgba(255, 255, 255, 0.3);
+    }
+
+    .login-card input[type="text"]:focus {
+      border-color: #ffb432;
+      box-shadow: 0 0 20px rgba(255, 180, 50, 0.2);
+    }
+
+    .login-card .login-error {
+      color: #f44336;
+      font-size: 0.9em;
+      margin-bottom: 12px;
+      min-height: 1.2em;
+    }
+
+    .login-card button {
+      width: 100%;
+      padding: 14px;
+      background: rgba(255, 180, 50, 0.2);
+      border: 2px solid rgba(255, 180, 50, 0.6);
+      border-radius: 8px;
+      color: #ffb432;
+      font-size: 1.1em;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .login-card button:hover {
+      background: rgba(255, 180, 50, 0.35);
+      border-color: #ffb432;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(255, 180, 50, 0.3);
+    }
+
+    .login-card button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .player-name-badge {
+      color: #ffb432;
+      font-weight: bold;
+    }
+
+    /* Local Pause Panel */
+    .local-pause-panel {
+      background: rgba(30, 30, 30, 0.9);
+      border: 2px solid rgba(255, 180, 50, 0.3);
+      border-radius: 10px;
+      padding: 20px;
+      margin: 20px 0;
+      text-align: center;
+    }
+
+    .local-pause-panel h3 {
+      color: #ffb432;
+      margin-bottom: 8px;
+      font-size: 1.1em;
+    }
+
+    .local-pause-panel p {
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 0.9em;
+      margin-bottom: 16px;
+    }
+
+    #local-pause-btn {
+      padding: 12px 32px;
+      font-size: 1.1em;
+      font-weight: bold;
+      border-radius: 8px;
+      border: 2px solid rgba(255, 180, 50, 0.6);
+      background: rgba(255, 180, 50, 0.15);
+      color: #ffb432;
+      cursor: pointer;
+      transition: all 0.3s;
+      width: 100%;
+    }
+
+    #local-pause-btn:hover {
+      background: rgba(255, 180, 50, 0.3);
+      border-color: #ffb432;
+      transform: translateY(-2px);
+    }
+
+    #local-pause-btn.paused {
+      background: rgba(76, 175, 80, 0.15);
+      border-color: rgba(76, 175, 80, 0.7);
+      color: #4caf50;
+    }
+
+    #local-pause-btn.paused:hover {
+      background: rgba(76, 175, 80, 0.3);
+      border-color: #4caf50;
+    }
+
+    .desync-banner {
+      display: none;
+      background: rgba(255, 152, 0, 0.15);
+      border: 1px solid rgba(255, 152, 0, 0.5);
+      border-radius: 8px;
+      padding: 10px 16px;
+      margin-top: 12px;
+      color: #ff9800;
+      font-size: 0.9em;
+      text-align: center;
+    }
+
+    .desync-banner.visible {
+      display: block;
+    }
+
+    .force-rejoin-banner {
+      display: none;
+      background: rgba(244, 67, 54, 0.15);
+      border: 1px solid rgba(244, 67, 54, 0.5);
+      border-radius: 8px;
+      padding: 10px 16px;
+      margin-top: 12px;
+      color: #f44336;
+      font-size: 0.9em;
+      text-align: center;
+      animation: pulse 1.5s infinite;
+    }
+
+    .force-rejoin-banner.visible {
+      display: block;
+    }
+
+    /* Volume Panel */
     .volume-panel {
       background: rgba(30, 30, 30, 0.95);
       border: 2px solid rgba(255, 180, 50, 0.5);
@@ -197,7 +388,7 @@
       transform: translateY(-2px);
     }
 
-    /* Now Playing Section */
+    /* Now Playing */
     .now-playing {
       background: rgba(30, 30, 30, 0.8);
       border: 2px solid rgba(255, 180, 50, 0.3);
@@ -229,6 +420,7 @@
       background: #4caf50;
       box-shadow: 0 0 10px #4caf50;
       animation: pulse 1.5s infinite;
+      flex-shrink: 0;
     }
 
     .track-info {
@@ -261,101 +453,6 @@
       margin-bottom: 10px;
     }
 
-    footer {
-      text-align: center;
-      margin-top: 40px;
-      padding: 20px;
-      color: rgba(255, 255, 255, 0.5);
-      font-size: 0.9em;
-    }
-
-    /* Local Pause Button */
-    .local-pause-panel {
-      background: rgba(30, 30, 30, 0.9);
-      border: 2px solid rgba(255, 180, 50, 0.3);
-      border-radius: 10px;
-      padding: 20px;
-      margin: 20px 0;
-      text-align: center;
-    }
-
-    .local-pause-panel h3 {
-      color: #ffb432;
-      margin-bottom: 8px;
-      font-size: 1.1em;
-    }
-
-    .local-pause-panel p {
-      color: rgba(255,255,255,0.6);
-      font-size: 0.9em;
-      margin-bottom: 16px;
-    }
-
-    #local-pause-btn {
-      padding: 12px 32px;
-      font-size: 1.1em;
-      font-weight: bold;
-      border-radius: 8px;
-      border: 2px solid rgba(255, 180, 50, 0.6);
-      background: rgba(255, 180, 50, 0.15);
-      color: #ffb432;
-      cursor: pointer;
-      transition: all 0.3s;
-      width: 100%;
-    }
-
-    #local-pause-btn:hover {
-      background: rgba(255, 180, 50, 0.3);
-      border-color: #ffb432;
-      transform: translateY(-2px);
-    }
-
-    #local-pause-btn.paused {
-      background: rgba(76, 175, 80, 0.15);
-      border-color: rgba(76, 175, 80, 0.7);
-      color: #4caf50;
-    }
-
-    #local-pause-btn.paused:hover {
-      background: rgba(76, 175, 80, 0.3);
-      border-color: #4caf50;
-    }
-
-    /* Desynced warning banner */
-    .desync-banner {
-      display: none;
-      background: rgba(255, 152, 0, 0.15);
-      border: 1px solid rgba(255, 152, 0, 0.5);
-      border-radius: 8px;
-      padding: 10px 16px;
-      margin-top: 12px;
-      color: #ff9800;
-      font-size: 0.9em;
-      text-align: center;
-    }
-
-    .desync-banner.visible {
-      display: block;
-    }
-
-    /* Force rejoin banner */
-    .force-rejoin-banner {
-      display: none;
-      background: rgba(244, 67, 54, 0.15);
-      border: 1px solid rgba(244, 67, 54, 0.5);
-      border-radius: 8px;
-      padding: 10px 16px;
-      margin-top: 12px;
-      color: #f44336;
-      font-size: 0.9em;
-      text-align: center;
-      animation: pulse 1.5s infinite;
-    }
-
-    .force-rejoin-banner.visible {
-      display: block;
-    }
-
     /* Info tooltip */
     .info-tooltip {
       background: rgba(255, 180, 50, 0.1);
@@ -371,13 +468,35 @@
     .info-tooltip strong {
       color: #ffb432;
     }
+
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      padding: 20px;
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 0.9em;
+    }
   </style>
 </head>
 <body>
+
+  <!-- Login Overlay -->
+  <div id="login-overlay">
+    <div class="login-card">
+      <div class="login-icon">🎲</div>
+      <h2>Wildlands Soundboard</h2>
+      <p>Enter your character or player name to join the session.</p>
+      <input type="text" id="player-name-input" placeholder="Your name or PC name" maxlength="32" autocomplete="off" />
+      <div class="login-error" id="login-error"></div>
+      <button id="login-btn" onclick="submitLogin()">Join Session</button>
+    </div>
+  </div>
+
   <div class="container">
+
     <header>
       <h1>🎧 Wildlands Soundboard</h1>
-      <p class="subtitle">Player View</p>
+      <p class="subtitle">Player View — <span class="player-name-badge" id="header-player-name"></span></p>
       <div class="status">
         <div class="status-indicator" id="connection-status"></div>
         <span id="connection-text">Connecting...</span>
@@ -400,13 +519,12 @@
     <!-- Volume Controls -->
     <div id="player-volume-panel" class="volume-panel">
       <h3>🔊 Your Volume Controls</h3>
-      
+
       <div class="info-tooltip">
-        <strong>💡 How it works:</strong> Your GM controls what plays and when. 
+        <strong>💡 How it works:</strong> Your GM controls what plays and when.
         You control how loud it is for you! Adjust the sliders below to your comfort level.
       </div>
 
-      <!-- Master Volume -->
       <div class="volume-control master-volume">
         <label>
           <span class="volume-label">🎚️ Master Volume</span>
@@ -416,7 +534,6 @@
         <small>Controls all audio from your GM</small>
       </div>
 
-      <!-- BGM Volume -->
       <div class="volume-control">
         <label>
           <span class="volume-label">🎵 Background Music</span>
@@ -426,7 +543,6 @@
         <small>Adjust music tracks independently</small>
       </div>
 
-      <!-- Ambience Volume -->
       <div class="volume-control">
         <label>
           <span class="volume-label">🌊 Ambience</span>
@@ -436,7 +552,6 @@
         <small>Adjust ambient sounds independently</small>
       </div>
 
-      <!-- SFX Volume -->
       <div class="volume-control">
         <label>
           <span class="volume-label">⚡ Sound Effects</span>
@@ -464,607 +579,16 @@
       <p>🎲 Wildlands Campaign Audio System</p>
       <p>Volume controls are saved to your browser</p>
     </footer>
+
   </div>
 
   <!-- Audio Elements -->
   <audio id="bgm-audio" loop></audio>
   <audio id="ambience-audio" loop></audio>
 
-  <!-- Socket.IO -->
+  <!-- Scripts: Socket.IO first, then app logic -->
   <script src="/socket.io/socket.io.js"></script>
+  <script src="/player.js"></script>
 
-  <script>
-    // PlayerVolumeControl class embedded
-    class PlayerVolumeControl {
-      constructor(socket) {
-        this.socket = socket;
-        
-        // Player volume settings (stored locally)
-        this.volumes = {
-          master: 0.7,      // Master volume for all audio
-          bgm: 1.0,         // BGM multiplier
-          ambience: 1.0,    // Ambience multiplier
-          sfx: 1.0          // SFX multiplier
-        };
-        
-        // Audio elements
-        this.audioElements = {
-          bgm: null,
-          ambience: null,
-          sfx: new Map() // SFX are one-shot, so we track multiple
-        };
-        
-        // Load saved preferences from localStorage
-        this.loadPreferences();
-        
-        // Setup UI controls
-        this.setupUI();
-        
-        // Setup socket listeners
-        this.setupSocketListeners();
-      }
-      
-      // Load player preferences from localStorage
-      loadPreferences() {
-        const saved = localStorage.getItem('soundboard_player_volumes');
-        if (saved) {
-          try {
-            this.volumes = { ...this.volumes, ...JSON.parse(saved) };
-          } catch (e) {
-            console.error('Failed to load volume preferences:', e);
-          }
-        }
-      }
-      
-      // Save player preferences to localStorage
-      savePreferences() {
-        localStorage.setItem('soundboard_player_volumes', JSON.stringify(this.volumes));
-      }
-      
-      // Setup UI controls for volume
-      setupUI() {
-        // Set initial slider values from saved preferences
-        document.getElementById('volume-master').value = this.volumes.master * 100;
-        document.getElementById('volume-bgm').value = this.volumes.bgm * 100;
-        document.getElementById('volume-ambience').value = this.volumes.ambience * 100;
-        document.getElementById('volume-sfx').value = this.volumes.sfx * 100;
-        
-        this.updateVolumeDisplays();
-        
-        // Attach event listeners
-        document.getElementById('volume-master').addEventListener('input', (e) => {
-          this.setVolume('master', e.target.value / 100);
-        });
-        
-        document.getElementById('volume-bgm').addEventListener('input', (e) => {
-          this.setVolume('bgm', e.target.value / 100);
-        });
-        
-        document.getElementById('volume-ambience').addEventListener('input', (e) => {
-          this.setVolume('ambience', e.target.value / 100);
-        });
-        
-        document.getElementById('volume-sfx').addEventListener('input', (e) => {
-          this.setVolume('sfx', e.target.value / 100);
-        });
-        
-        document.getElementById('reset-volumes').addEventListener('click', () => {
-          this.resetVolumes();
-        });
-      }
-      
-      // Update volume display percentages
-      updateVolumeDisplays() {
-        document.getElementById('master-value').textContent = Math.round(this.volumes.master * 100) + '%';
-        document.getElementById('bgm-value').textContent = Math.round(this.volumes.bgm * 100) + '%';
-        document.getElementById('ambience-value').textContent = Math.round(this.volumes.ambience * 100) + '%';
-        document.getElementById('sfx-value').textContent = Math.round(this.volumes.sfx * 100) + '%';
-      }
-      
-      // Set volume for a specific channel
-      setVolume(channel, value) {
-        this.volumes[channel] = value;
-        this.updateVolumeDisplays();
-        this.savePreferences();
-        
-        // Apply to currently playing audio
-        if (channel === 'master') {
-          this.applyAllVolumes();
-        } else {
-          this.applyVolume(channel);
-        }
-        
-        // Optional: Send to server for logging
-        this.socket.emit(`player:volume:${channel}`, value);
-      }
-      
-      // Reset all volumes to defaults
-      resetVolumes() {
-        this.volumes = {
-          master: 0.7,
-          bgm: 1.0,
-          ambience: 1.0,
-          sfx: 1.0
-        };
-        
-        document.getElementById('volume-master').value = 70;
-        document.getElementById('volume-bgm').value = 100;
-        document.getElementById('volume-ambience').value = 100;
-        document.getElementById('volume-sfx').value = 100;
-        
-        this.updateVolumeDisplays();
-        this.savePreferences();
-        this.applyAllVolumes();
-      }
-      
-      // Calculate final volume for a channel
-      calculateVolume(channel, dmVolume) {
-        return this.volumes.master * this.volumes[channel] * dmVolume;
-      }
-      
-      // Apply volume to a specific channel
-      applyVolume(channel) {
-        const audio = this.audioElements[channel];
-        if (!audio) return;
-        
-        // Get the DM's volume from the audio element's dataset
-        const dmVolume = parseFloat(audio.dataset.dmVolume || '1.0');
-        audio.volume = this.calculateVolume(channel, dmVolume);
-      }
-      
-      // Apply all volumes
-      applyAllVolumes() {
-        ['bgm', 'ambience'].forEach(channel => this.applyVolume(channel));
-        
-        // Apply to all active SFX
-        this.audioElements.sfx.forEach(audio => {
-          const dmVolume = parseFloat(audio.dataset.dmVolume || '1.0');
-          audio.volume = this.calculateVolume('sfx', dmVolume);
-        });
-      }
-      
-      // Setup socket listeners
-      setupSocketListeners() {
-        // BGM events
-        this.socket.on('bgm:play', (data) => {
-          console.log('BGM Play event:', data);
-          
-          // Get or create audio element
-          if (!this.audioElements.bgm) {
-            this.audioElements.bgm = document.getElementById('bgm-audio');
-          }
-          
-          if (this.audioElements.bgm && data.track) {
-            // Set the source
-            this.audioElements.bgm.src = data.track.url;
-            
-            // Store GM volume
-            const dmVolume = data.volume !== undefined ? data.volume : 0.5;
-            this.audioElements.bgm.dataset.dmVolume = dmVolume;
-            
-            // Calculate and apply volume
-            this.audioElements.bgm.volume = this.calculateVolume('bgm', dmVolume);
-            
-            // Set loop
-            this.audioElements.bgm.loop = data.loop !== undefined ? data.loop : true;
-            
-            // Set current time if provided
-            if (data.currentTime !== undefined) {
-              this.audioElements.bgm.currentTime = data.currentTime;
-            }
-            
-            // Play
-            this.audioElements.bgm.play().catch(e => {
-              console.error('BGM play error:', e);
-              // Try to play on user interaction
-              document.addEventListener('click', () => {
-                this.audioElements.bgm.play().catch(err => console.log('Still blocked:', err));
-              }, { once: true });
-            });
-          }
-        });
-        
-        this.socket.on('bgm:pause', () => {
-          if (this.audioElements.bgm) {
-            this.audioElements.bgm.pause();
-          }
-        });
-        
-        this.socket.on('bgm:stop', () => {
-          if (this.audioElements.bgm) {
-            this.audioElements.bgm.pause();
-            this.audioElements.bgm.currentTime = 0;
-            this.audioElements.bgm.src = '';
-          }
-        });
-        
-        this.socket.on('bgm:volume', (dmVolume) => {
-          if (this.audioElements.bgm) {
-            this.audioElements.bgm.dataset.dmVolume = dmVolume;
-            this.audioElements.bgm.volume = this.calculateVolume('bgm', dmVolume);
-          }
-        });
-        
-        this.socket.on('bgm:seek', (time) => {
-          if (this.audioElements.bgm) {
-            this.audioElements.bgm.currentTime = time;
-          }
-        });
-        
-        // Ambience events
-        this.socket.on('ambience:play', (data) => {
-          console.log('Ambience Play event:', data);
-          
-          if (!this.audioElements.ambience) {
-            this.audioElements.ambience = document.getElementById('ambience-audio');
-          }
-          
-          if (this.audioElements.ambience && data.track) {
-            // Set the source
-            this.audioElements.ambience.src = data.track.url;
-            
-            // Store GM volume
-            const dmVolume = data.volume !== undefined ? data.volume : 0.3;
-            this.audioElements.ambience.dataset.dmVolume = dmVolume;
-            
-            // Calculate and apply volume
-            this.audioElements.ambience.volume = this.calculateVolume('ambience', dmVolume);
-            
-            // Set loop
-            this.audioElements.ambience.loop = data.loop !== undefined ? data.loop : true;
-            
-            // Set current time if provided
-            if (data.currentTime !== undefined) {
-              this.audioElements.ambience.currentTime = data.currentTime;
-            }
-            
-            // Play
-            this.audioElements.ambience.play().catch(e => {
-              console.error('Ambience play error:', e);
-              document.addEventListener('click', () => {
-                this.audioElements.ambience.play().catch(err => console.log('Still blocked:', err));
-              }, { once: true });
-            });
-          }
-        });
-        
-        this.socket.on('ambience:pause', () => {
-          if (this.audioElements.ambience) {
-            this.audioElements.ambience.pause();
-          }
-        });
-        
-        this.socket.on('ambience:stop', () => {
-          if (this.audioElements.ambience) {
-            this.audioElements.ambience.pause();
-            this.audioElements.ambience.currentTime = 0;
-            this.audioElements.ambience.src = '';
-          }
-        });
-        
-        this.socket.on('ambience:volume', (dmVolume) => {
-          if (this.audioElements.ambience) {
-            this.audioElements.ambience.dataset.dmVolume = dmVolume;
-            this.audioElements.ambience.volume = this.calculateVolume('ambience', dmVolume);
-          }
-        });
-        
-        // SFX events
-        this.socket.on('sfx:play', (data) => {
-          console.log('SFX Play event:', data);
-          
-          if (!data || !data.url) {
-            console.error('SFX data missing url:', data);
-            return;
-          }
-          
-          // Create new audio element for this SFX
-          const audio = new Audio(data.url);
-          const dmVolume = data.volume !== undefined ? data.volume : 1.0;
-          
-          audio.dataset.dmVolume = dmVolume;
-          audio.volume = this.calculateVolume('sfx', dmVolume);
-          
-          // Track it
-          const id = Date.now() + Math.random();
-          this.audioElements.sfx.set(id, audio);
-          
-          // Remove from tracking when done
-          audio.addEventListener('ended', () => {
-            this.audioElements.sfx.delete(id);
-          });
-          
-          audio.play().catch(e => console.error('SFX play error:', e));
-        });
-        
-        // Master stop
-        this.socket.on('master:stop', () => {
-          if (this.audioElements.bgm) {
-            this.audioElements.bgm.pause();
-            this.audioElements.bgm.currentTime = 0;
-            this.audioElements.bgm.src = '';
-          }
-          if (this.audioElements.ambience) {
-            this.audioElements.ambience.pause();
-            this.audioElements.ambience.currentTime = 0;
-            this.audioElements.ambience.src = '';
-          }
-          // Stop all SFX
-          this.audioElements.sfx.forEach(audio => {
-            audio.pause();
-            audio.currentTime = 0;
-          });
-          this.audioElements.sfx.clear();
-        });
-        
-        // State sync for new connections
-        this.socket.on('state:sync', (state) => {
-          console.log('State sync:', state);
-          
-          // Apply BGM state
-          if (state.bgm && state.bgm.playing && state.bgm.track) {
-            if (!this.audioElements.bgm) {
-              this.audioElements.bgm = document.getElementById('bgm-audio');
-            }
-            if (this.audioElements.bgm) {
-              this.audioElements.bgm.src = state.bgm.track.url;
-              this.audioElements.bgm.dataset.dmVolume = state.bgm.volume;
-              this.audioElements.bgm.volume = this.calculateVolume('bgm', state.bgm.volume);
-              this.audioElements.bgm.loop = state.bgm.loop !== undefined ? state.bgm.loop : true;
-              this.audioElements.bgm.currentTime = state.bgm.currentTime || 0;
-              this.audioElements.bgm.play().catch(e => console.error('BGM sync play error:', e));
-            }
-          }
-          
-          // Apply Ambience state
-          if (state.ambience && state.ambience.playing && state.ambience.track) {
-            if (!this.audioElements.ambience) {
-              this.audioElements.ambience = document.getElementById('ambience-audio');
-            }
-            if (this.audioElements.ambience) {
-              this.audioElements.ambience.src = state.ambience.track.url;
-              this.audioElements.ambience.dataset.dmVolume = state.ambience.volume;
-              this.audioElements.ambience.volume = this.calculateVolume('ambience', state.ambience.volume);
-              this.audioElements.ambience.loop = state.ambience.loop !== undefined ? state.ambience.loop : true;
-              this.audioElements.ambience.currentTime = state.ambience.currentTime || 0;
-              this.audioElements.ambience.play().catch(e => console.error('Ambience sync play error:', e));
-            }
-          }
-        });
-      }
-    }
-  </script>
-
-  <script>
-    // Initialize Socket.IO connection
-    const socket = io();
-    let playerVolumeControl;
-
-    // Local pause state
-    let localPaused = false;
-
-    function toggleLocalPause() {
-      if (localPaused) {
-        resumeLocal();
-      } else {
-        pauseLocal();
-      }
-    }
-
-    function pauseLocal() {
-      localPaused = true;
-      socket.emit('player:local:pause');
-
-      // Freeze audio
-      const bgm = document.getElementById('bgm-audio');
-      const amb = document.getElementById('ambience-audio');
-      if (bgm) bgm.pause();
-      if (amb) amb.pause();
-
-      // Update UI
-      const btn = document.getElementById('local-pause-btn');
-      btn.textContent = '▶ Resume & Resync';
-      btn.classList.add('paused');
-      document.getElementById('desync-banner').classList.add('visible');
-      document.getElementById('force-rejoin-banner').classList.remove('visible');
-    }
-
-    function resumeLocal() {
-      localPaused = false;
-      socket.emit('player:local:resume');
-      // Actual audio resume happens when server responds with player:rejoin:state
-      // Update UI optimistically
-      const btn = document.getElementById('local-pause-btn');
-      btn.textContent = '⏸ Pause My Audio';
-      btn.classList.remove('paused');
-      document.getElementById('desync-banner').classList.remove('visible');
-    }
-
-    function applyRejoinState(state) {
-      // Snap BGM to live position with a brief crossfade
-      if (playerVolumeControl && state.bgm && state.bgm.playing && state.bgm.track) {
-        const bgm = playerVolumeControl.audioElements.bgm || document.getElementById('bgm-audio');
-        if (bgm) {
-          const prevVol = bgm.volume;
-          bgm.volume = 0;
-          bgm.src = state.bgm.track.url || state.bgm.track;
-          bgm.currentTime = state.bgm.currentTime || 0;
-          bgm.dataset.dmVolume = state.bgm.volume;
-          bgm.volume = playerVolumeControl.calculateVolume('bgm', state.bgm.volume);
-          bgm.play().catch(e => console.error('BGM rejoin error:', e));
-        }
-      }
-      // Snap Ambience to live position
-      if (playerVolumeControl && state.ambience && state.ambience.playing && state.ambience.track) {
-        const amb = playerVolumeControl.audioElements.ambience || document.getElementById('ambience-audio');
-        if (amb) {
-          amb.src = state.ambience.track.url || state.ambience.track;
-          amb.currentTime = state.ambience.currentTime || 0;
-          amb.dataset.dmVolume = state.ambience.volume;
-          amb.volume = playerVolumeControl.calculateVolume('ambience', state.ambience.volume);
-          amb.play().catch(e => console.error('Ambience rejoin error:', e));
-        }
-      }
-    }
-    const currentlyPlaying = {
-      bgm: null,
-      ambience: null
-    };
-
-    // Connection status
-    socket.on('connect', () => {
-      console.log('Connected to soundboard server');
-      socket.emit('register', 'player');
-      
-      document.getElementById('connection-status').classList.remove('disconnected');
-      document.getElementById('connection-text').textContent = 'Connected to GM';
-
-      // Initialize player volume control
-      playerVolumeControl = new PlayerVolumeControl(socket);
-      
-      // Update UI when volumes change
-      setupVolumeListeners();
-    });
-
-    socket.on('disconnect', () => {
-      console.log('Disconnected from soundboard server');
-      document.getElementById('connection-status').classList.add('disconnected');
-      document.getElementById('connection-text').textContent = 'Disconnected';
-    });
-
-    // Server sends current authoritative state after player:local:resume
-    socket.on('player:rejoin:state', (state) => {
-      console.log('Rejoin state received:', state);
-      applyRejoinState(state);
-    });
-
-    // Server forces rejoin when GM changes track while player was paused
-    socket.on('player:force:rejoin', (state) => {
-      console.log('Force rejoin triggered by track change');
-      localPaused = false;
-      const btn = document.getElementById('local-pause-btn');
-      btn.textContent = '⏸ Pause My Audio';
-      btn.classList.remove('paused');
-      document.getElementById('desync-banner').classList.remove('visible');
-      document.getElementById('force-rejoin-banner').classList.add('visible');
-      setTimeout(() => document.getElementById('force-rejoin-banner').classList.remove('visible'), 4000);
-      applyRejoinState(state);
-    });
-
-    // Setup volume change listeners
-    function setupVolumeListeners() {
-      // Update now playing when tracks change
-      socket.on('bgm:play', (data) => {
-        console.log('BGM play received:', data);
-        currentlyPlaying.bgm = data;
-        updateNowPlaying();
-      });
-      
-      socket.on('bgm:stop', () => {
-        console.log('BGM stopped');
-        currentlyPlaying.bgm = null;
-        updateNowPlaying();
-      });
-      
-      socket.on('bgm:pause', () => {
-        console.log('BGM paused');
-        if (currentlyPlaying.bgm) {
-          currentlyPlaying.bgm.playing = false;
-        }
-        updateNowPlaying();
-      });
-      
-      socket.on('ambience:play', (data) => {
-        console.log('Ambience play received:', data);
-        currentlyPlaying.ambience = data;
-        updateNowPlaying();
-      });
-      
-      socket.on('ambience:stop', () => {
-        console.log('Ambience stopped');
-        currentlyPlaying.ambience = null;
-        updateNowPlaying();
-      });
-      
-      socket.on('ambience:pause', () => {
-        console.log('Ambience paused');
-        if (currentlyPlaying.ambience) {
-          currentlyPlaying.ambience.playing = false;
-        }
-        updateNowPlaying();
-      });
-
-      socket.on('master:stop', () => {
-        console.log('Master stop');
-        currentlyPlaying.bgm = null;
-        currentlyPlaying.ambience = null;
-        updateNowPlaying();
-      });
-      
-      socket.on('state:sync', (state) => {
-        console.log('State sync received:', state);
-        currentlyPlaying.bgm = state.bgm && state.bgm.playing ? state.bgm : null;
-        currentlyPlaying.ambience = state.ambience && state.ambience.playing ? state.ambience : null;
-        updateNowPlaying();
-      });
-    }
-
-    // Update Now Playing display
-    function updateNowPlaying() {
-      const container = document.getElementById('now-playing-content');
-      
-      const bgm = currentlyPlaying.bgm;
-      const ambience = currentlyPlaying.ambience;
-      
-      console.log('Updating now playing - BGM:', bgm, 'Ambience:', ambience);
-      
-      if (!bgm && !ambience) {
-        container.innerHTML = `
-          <div class="nothing-playing">
-            <div class="nothing-playing-icon">🎵</div>
-            <p>Waiting for your GM to start audio...</p>
-          </div>
-        `;
-        return;
-      }
-
-      let html = '';
-
-      if (bgm && bgm.track) {
-        const trackName = bgm.track.name || bgm.track.filename || 'Unknown Track';
-        const volume = bgm.volume !== undefined ? bgm.volume : 0.5;
-        html += `
-          <div class="track-item">
-            <div class="track-indicator"></div>
-            <div class="track-info">
-              <div class="track-name">🎵 ${trackName}</div>
-              <div class="track-type">Background Music</div>
-              <div class="dm-volume">GM Volume: ${Math.round(volume * 100)}%</div>
-            </div>
-          </div>
-        `;
-      }
-
-      if (ambience && ambience.track) {
-        const trackName = ambience.track.name || ambience.track.filename || 'Unknown Track';
-        const volume = ambience.volume !== undefined ? ambience.volume : 0.3;
-        html += `
-          <div class="track-item">
-            <div class="track-indicator"></div>
-            <div class="track-info">
-              <div class="track-name">🌊 ${trackName}</div>
-              <div class="track-type">Ambience</div>
-              <div class="dm-volume">GM Volume: ${Math.round(volume * 100)}%</div>
-            </div>
-          </div>
-        `;
-      }
-
-      container.innerHTML = html;
-    }
-
-    // Listen for BGM changes (already handled in setupVolumeListeners)
-    // Removed duplicate listeners
-  </script>
 </body>
 </html>

@@ -1020,11 +1020,25 @@
       const status = document.getElementById('player-status');
       const count = document.getElementById('player-count');
       status.className = 'status-dot' + (data.players > 0 ? ' connected' : '');
-      let label = `${data.players} Player${data.players !== 1 ? 's' : ''}`;
-      if (data.pausedCount > 0) {
-        label += ` <span style="color:#ff9800;font-size:0.85em;">(${data.pausedCount} paused ⏸)</span>`;
+
+      if (!data.playerList || data.playerList.length === 0) {
+        count.innerHTML = '0 Players';
+        return;
       }
-      count.innerHTML = label;
+
+      const nameChips = data.playerList.map(p => {
+        const paused = p.syncMode === 'PAUSED';
+        return `<span style="
+          display:inline-flex;align-items:center;gap:4px;
+          background:${paused ? 'rgba(255,152,0,0.15)' : 'rgba(122,162,247,0.12)'};
+          border:1px solid ${paused ? 'rgba(255,152,0,0.5)' : 'rgba(122,162,247,0.3)'};
+          border-radius:12px;padding:2px 10px;margin:2px 3px;
+          color:${paused ? '#ff9800' : 'var(--text)'};font-size:0.85em;
+        ">${paused ? '⏸ ' : ''}${p.name}</span>`
+      }).join('');
+
+      const label = `${data.players} Player${data.players !== 1 ? 's' : ''}`;
+      count.innerHTML = `<span style="margin-right:6px">${label}</span>${nameChips}`;
     });
 
     socket.on('tracks:updated', () => loadTracks());

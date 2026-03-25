@@ -64,9 +64,9 @@ app.use('/audio/ambience', express.static(AUDIO_DIRS.ambience));
 app.use('/audio/sfx', express.static(AUDIO_DIRS.sfx));
 app.use(express.json());
 
-// Serve player-volume-control.js specifically
-app.get('/player-volume-control.js', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'player-volume-control.js'));
+// Serve player.js from root (sits alongside server.js)
+app.get('/player.js', (req, res) => {
+  res.sendFile(path.join(__dirname, 'player.js'));
 });
 
 // Current playback state
@@ -82,15 +82,16 @@ let connectedClients = { dm: null, players: new Set() };
 const playerSyncState = new Map();
 
 function broadcastClientUpdate() {
-  const pausedIds = [];
+  const playerList = [];
   playerSyncState.forEach((state, id) => {
-    if (state.syncMode === 'PAUSED') pausedIds.push(id);
+    playerList.push({ id, name: state.name || id, syncMode: state.syncMode });
   });
+  const pausedCount = playerList.filter(p => p.syncMode === 'PAUSED').length;
   io.emit('clients:update', {
     dm: !!connectedClients.dm,
     players: connectedClients.players.size,
-    pausedCount: pausedIds.length,
-    pausedPlayers: pausedIds
+    pausedCount,
+    playerList
   });
 }
 
@@ -191,13 +192,19 @@ app.get('/api/state', (req, res) => {
 io.on('connection', (socket) => {
   console.log(`Client connected: ${socket.id}`);
 
-  socket.on('register', (role) => {
+  socket.on('register', (payload) => {
+    // Accept both legacy 'player'/'dm' strings and new { role, name } objects
+    const role = typeof payload === 'string' ? payload : payload.role;
+    const name = typeof payload === 'object' && payload.name ? payload.name : null;
+
     socket.role = role;
+    socket.playerName = name;
+
     if (role === 'dm') {
       connectedClients.dm = socket.id;
     } else {
       connectedClients.players.add(socket.id);
-      playerSyncState.set(socket.id, { syncMode: 'LIVE', pausedAt: null });
+      playerSyncState.set(socket.id, { syncMode: 'LIVE', pausedAt: null, name: name || socket.id });
     }
     // Send current state to new client
     socket.emit('state:sync', playbackState);

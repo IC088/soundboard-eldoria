@@ -78,6 +78,22 @@ let playbackState = {
 
 let connectedClients = { dm: null, players: new Set() };
 
+// Per-player sync state: socketId -> { syncMode: 'LIVE'|'PAUSED', pausedAt: timestamp|null }
+const playerSyncState = new Map();
+
+function broadcastClientUpdate() {
+  const pausedIds = [];
+  playerSyncState.forEach((state, id) => {
+    if (state.syncMode === 'PAUSED') pausedIds.push(id);
+  });
+  io.emit('clients:update', {
+    dm: !!connectedClients.dm,
+    players: connectedClients.players.size,
+    pausedCount: pausedIds.length,
+    pausedPlayers: pausedIds
+  });
+}
+
 // API Routes
 
 // Get all tracks organized by category
@@ -181,47 +197,25 @@ io.on('connection', (socket) => {
       connectedClients.dm = socket.id;
     } else {
       connectedClients.players.add(socket.id);
+      playerSyncState.set(socket.id, { syncMode: 'LIVE', pausedAt: null });
     }
-    
-    // Calculate current playback positions for syncing
-    const syncState = {
-      bgm: { ...playbackState.bgm },
-      ambience: { ...playbackState.ambience }
-    };
-    
-    // Calculate elapsed time for BGM if playing
-    if (playbackState.bgm.playing && playbackState.bgm.startTime) {
-      const elapsed = (Date.now() - playbackState.bgm.startTime) / 1000;
-      syncState.bgm.currentTime = (playbackState.bgm.currentTime || 0) + elapsed;
-    }
-    
-    // Calculate elapsed time for Ambience if playing
-    if (playbackState.ambience.playing && playbackState.ambience.startTime) {
-      const elapsed = (Date.now() - playbackState.ambience.startTime) / 1000;
-      syncState.ambience.currentTime = (playbackState.ambience.currentTime || 0) + elapsed;
-    }
-    
-    // Add src URLs for MusicSyncSystem compatibility
-    if (syncState.bgm.track) {
-      syncState.bgm.src = syncState.bgm.track.url;
-    }
-    if (syncState.ambience.track) {
-      syncState.ambience.src = syncState.ambience.track.url;
-    }
-    
-    // Send current state to new client with calculated positions
-    socket.emit('state:sync', syncState);
-    
-    io.emit('clients:update', {
-      dm: !!connectedClients.dm,
-      players: connectedClients.players.size
-    });
+    // Send current state to new client
+    socket.emit('state:sync', playbackState);
+    broadcastClientUpdate();
   });
 
   // BGM Controls
   socket.on('bgm:play', (data) => {
-    playbackState.bgm = { ...playbackState.bgm, ...data, playing: true, startTime: Date.now() };
+    playbackState.bgm = { ...playbackState.bgm, ...data, playing: true };
     io.emit('bgm:play', playbackState.bgm);
+    // Force paused players back to live on track change (dramatic reveals shouldn't be missable)
+    playerSyncState.forEach((state, id) => {
+      if (state.syncMode === 'PAUSED') {
+        playerSyncState.set(id, { syncMode: 'LIVE', pausedAt: null });
+        io.to(id).emit('player:force:rejoin', playbackState);
+      }
+    });
+    broadcastClientUpdate();
   });
 
   socket.on('bgm:pause', () => {
@@ -241,7 +235,6 @@ io.on('connection', (socket) => {
 
   socket.on('bgm:seek', (time) => {
     playbackState.bgm.currentTime = time;
-    playbackState.bgm.startTime = Date.now();
     io.emit('bgm:seek', time);
   });
 
@@ -250,16 +243,18 @@ io.on('connection', (socket) => {
     io.emit('bgm:loop', loop);
   });
 
-  // Update current time periodically (from DM)
-  socket.on('bgm:time-update', (currentTime) => {
-    playbackState.bgm.currentTime = currentTime;
-    playbackState.bgm.startTime = Date.now();
-  });
-
   // Ambience Controls
   socket.on('ambience:play', (data) => {
-    playbackState.ambience = { ...playbackState.ambience, ...data, playing: true, startTime: Date.now() };
+    playbackState.ambience = { ...playbackState.ambience, ...data, playing: true };
     io.emit('ambience:play', playbackState.ambience);
+    // Force paused players back to live on track change
+    playerSyncState.forEach((state, id) => {
+      if (state.syncMode === 'PAUSED') {
+        playerSyncState.set(id, { syncMode: 'LIVE', pausedAt: null });
+        io.to(id).emit('player:force:rejoin', playbackState);
+      }
+    });
+    broadcastClientUpdate();
   });
 
   socket.on('ambience:pause', () => {
@@ -275,12 +270,6 @@ io.on('connection', (socket) => {
   socket.on('ambience:volume', (volume) => {
     playbackState.ambience.volume = volume;
     io.emit('ambience:volume', volume);
-  });
-
-  // Update current time periodically (from DM)
-  socket.on('ambience:time-update', (currentTime) => {
-    playbackState.ambience.currentTime = currentTime;
-    playbackState.ambience.startTime = Date.now();
   });
 
   // SFX - one-shot sounds
@@ -326,20 +315,22 @@ io.on('connection', (socket) => {
     // No broadcast needed - this is local to the player
   });
 
-  // Real-time sync system
-  socket.on('sync:broadcast', (data) => {
-    // DM broadcasts current playback position to all players
-    if (socket.role === 'dm') {
-      socket.broadcast.emit('sync:broadcast', data);
-      console.log(`Sync broadcast from DM to ${connectedClients.players.size} players`);
+  // Player local pause/resume (Option D - server-side observer state)
+  socket.on('player:local:pause', () => {
+    if (playerSyncState.has(socket.id)) {
+      playerSyncState.set(socket.id, { syncMode: 'PAUSED', pausedAt: Date.now() });
+      console.log(`Player ${socket.id} entered local pause`);
+      broadcastClientUpdate();
     }
   });
 
-  socket.on('sync:request', () => {
-    // Player requests immediate sync from DM
-    if (connectedClients.dm) {
-      io.to(connectedClients.dm).emit('sync:request');
-      console.log(`Player ${socket.id} requested sync from DM`);
+  socket.on('player:local:resume', () => {
+    if (playerSyncState.has(socket.id)) {
+      playerSyncState.set(socket.id, { syncMode: 'LIVE', pausedAt: null });
+      console.log(`Player ${socket.id} rejoining live sync`);
+      // Send authoritative current state so player can snap to live position
+      socket.emit('player:rejoin:state', playbackState);
+      broadcastClientUpdate();
     }
   });
 
@@ -348,11 +339,9 @@ io.on('connection', (socket) => {
       connectedClients.dm = null;
     } else {
       connectedClients.players.delete(socket.id);
+      playerSyncState.delete(socket.id);
     }
-    io.emit('clients:update', {
-      dm: !!connectedClients.dm,
-      players: connectedClients.players.size
-    });
+    broadcastClientUpdate();
     console.log(`Client disconnected: ${socket.id}`);
   });
 });

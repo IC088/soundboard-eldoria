@@ -1020,7 +1020,11 @@
       const status = document.getElementById('player-status');
       const count = document.getElementById('player-count');
       status.className = 'status-dot' + (data.players > 0 ? ' connected' : '');
-      count.textContent = `${data.players} Player${data.players !== 1 ? 's' : ''}`;
+      let label = `${data.players} Player${data.players !== 1 ? 's' : ''}`;
+      if (data.pausedCount > 0) {
+        label += ` <span style="color:#ff9800;font-size:0.85em;">(${data.pausedCount} paused ⏸)</span>`;
+      }
+      count.innerHTML = label;
     });
 
     socket.on('tracks:updated', () => loadTracks());

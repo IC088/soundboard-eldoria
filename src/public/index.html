@@ -3,1397 +3,1819 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Soundboard — DM Control</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+  <title>Eldoria — GM Dashboard</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    
+
     :root {
-      --bg-deep: #0a0a0f;
-      --bg-panel: #12121a;
-      --bg-card: #1a1a24;
-      --bg-hover: #242430;
-      --border: #2a2a3a;
-      --border-glow: #4a3f6b;
-      --text: #e8e6f0;
-      --text-dim: #8a8894;
-      --text-bright: #ffffff;
-      --accent: #9d7cd8;
-      --accent-dim: #6b5a96;
-      --bgm: #7aa2f7;
-      --ambience: #9ece6a;
-      --sfx: #f7768e;
-      --gold: #e0af68;
-      --shadow: rgba(0, 0, 0, 0.5);
+      --bg:        #0d0d12;
+      --bg2:       #16161f;
+      --bg3:       #1e1e2a;
+      --border:    rgba(255,255,255,0.08);
+      --border2:   rgba(255,255,255,0.14);
+      --text:      #e8e6f0;
+      --text2:     #9896a8;
+      --text3:     #5e5c6e;
+      /* GM amber accent — distinct from player purple */
+      --accent:    #ef9f27;
+      --accent2:   #854f0b;
+      --accent-bg: #251a08;
+      --accent-lt: #faeeda;
+      --accent-txt:#633806;
+      /* status colours */
+      --green:     #1d9e75;
+      --green-bg:  #0d2920;
+      --red:       #e24b4a;
+      --red-bg:    #2a0f0f;
+      --blue:      #378add;
+      --blue-bg:   #0c1e2e;
+      --amber:     #ba7517;
+      --amber-bg:  #251a08;
+      /* channel colours */
+      --bgm-c:     #7aa2f7;
+      --amb-c:     #9ece6a;
+      --sfx-c:     #f7768e;
     }
 
-    html, body {
-      height: 100%;
-      font-family: 'Crimson Pro', Georgia, serif;
-      background: var(--bg-deep);
-      color: var(--text);
-      line-height: 1.5;
-    }
+    html, body { height: 100%; font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; overflow: hidden; }
 
-    body {
-      background-image: 
-        radial-gradient(ellipse at 20% 0%, rgba(157, 124, 216, 0.08) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 100%, rgba(122, 162, 247, 0.06) 0%, transparent 50%);
-      min-height: 100vh;
-    }
-
-    /* Header */
-    header {
-      background: linear-gradient(180deg, var(--bg-panel) 0%, transparent 100%);
+    /* ── TOP BAR ── */
+    .topbar {
+      display: flex; align-items: center; height: 48px;
+      padding: 0 16px; background: var(--bg2);
       border-bottom: 1px solid var(--border);
-      padding: 1.25rem 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      backdrop-filter: blur(10px);
+      gap: 0; flex-shrink: 0; position: relative; z-index: 20;
     }
-
-    .logo {
-      font-family: 'Cinzel', serif;
-      font-size: 1.5rem;
-      font-weight: 600;
-      color: var(--text-bright);
-      letter-spacing: 0.1em;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
+    .topbar-logo {
+      font-size: 1em; font-weight: 700; color: var(--accent);
+      letter-spacing: 0.04em; white-space: nowrap; margin-right: 4px;
     }
-
-    .logo::before {
-      content: '♫';
-      color: var(--accent);
+    .gm-badge {
+      font-size: 0.68em; font-weight: 600; padding: 2px 8px;
+      border-radius: 20px; background: var(--accent-bg);
+      color: var(--accent-txt); margin-right: 20px; white-space: nowrap;
     }
-
-    .connection-status {
-      display: flex;
-      align-items: center;
-      gap: 1.5rem;
-      font-size: 0.9rem;
+    .topbar-tabs { display: flex; height: 100%; flex: 1; overflow-x: auto; scrollbar-width: none; }
+    .topbar-tabs::-webkit-scrollbar { display: none; }
+    .tab {
+      display: flex; align-items: center; gap: 6px; padding: 0 16px;
+      height: 100%; font-size: 0.85em; color: var(--text2);
+      border-bottom: 2px solid transparent; cursor: pointer;
+      white-space: nowrap; transition: color 0.15s; user-select: none;
     }
+    .tab:hover { color: var(--text); }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }
 
-    .status-item {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
+    .topbar-status {
+      display: flex; align-items: center; gap: 10px;
+      margin-left: auto; flex-shrink: 0; font-size: 0.8em;
     }
-
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--text-dim);
-      animation: pulse 2s infinite;
+    .conn-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+    .conn-dot.off { background: var(--red); }
+    #player-chips { display: flex; gap: 4px; flex-wrap: nowrap; max-width: 300px; overflow: hidden; }
+    .p-chip {
+      font-size: 0.75em; padding: 2px 8px; border-radius: 20px;
+      background: var(--bg3); border: 1px solid var(--border2);
+      color: var(--text2); white-space: nowrap;
     }
+    .p-chip.paused { background: var(--amber-bg); border-color: var(--amber); color: var(--amber); }
 
-    .status-dot.connected { background: var(--ambience); }
-    .status-dot.dm { background: var(--accent); }
+    /* ── SHELL ── */
+    #app { display: flex; flex-direction: column; height: 100vh; }
+    .shell { display: flex; flex: 1; overflow: hidden; }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
+    /* ── MAIN CONTENT ── */
+    .main-content { flex: 1; min-width: 0; overflow-y: auto; background: var(--bg); }
+    .tab-page { display: none; height: 100%; }
+    .tab-page.active { display: flex; flex-direction: column; }
+
+    /* ── RESIZABLE DIVIDER ── */
+    .divider {
+      width: 5px; background: var(--bg2); border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border); cursor: col-resize; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; user-select: none;
     }
+    .divider-dots { display: flex; flex-direction: column; gap: 3px; }
+    .divider-dot { width: 2px; height: 2px; border-radius: 50%; background: var(--border2); }
 
-    /* Main Layout */
-    main {
-      display: grid;
-      grid-template-columns: 320px 1fr;
-      gap: 1px;
-      background: var(--border);
-      min-height: calc(100vh - 70px);
+    /* ── RIGHT PANEL ── */
+    .right-panel {
+      width: 300px; flex-shrink: 0; background: var(--bg2);
+      border-left: 1px solid var(--border); display: flex;
+      flex-direction: column; overflow: hidden;
     }
-
-    /* Sidebar - Track Library */
-    .sidebar {
-      background: var(--bg-panel);
-      padding: 1.5rem;
-      overflow-y: auto;
-      max-height: calc(100vh - 70px);
+    .rp-tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .rp-tab {
+      flex: 1; padding: 9px 8px; font-size: 0.78em; text-align: center;
+      cursor: pointer; color: var(--text2); border-bottom: 2px solid transparent;
+      user-select: none; white-space: nowrap;
     }
+    .rp-tab:hover { color: var(--text); }
+    .rp-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }
+    .rp-body { flex: 1; overflow-y: auto; }
+    .rp-panel { display: none; padding: 12px; }
+    .rp-panel.active { display: block; }
 
-    .sidebar-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
+    /* ── SHARED CARD COMPONENTS ── */
+    .card {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 10px; margin-bottom: 10px; overflow: hidden;
     }
-
-    .sidebar h2 {
-      font-family: 'Cinzel', serif;
-      font-size: 1rem;
-      font-weight: 600;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: var(--text-dim);
+    .card-hd {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 12px; border-bottom: 1px solid var(--border);
+      font-size: 0.82em; font-weight: 600;
     }
-
-    .upload-btn {
-      background: var(--bg-card);
-      border: 1px dashed var(--border);
-      color: var(--text-dim);
-      padding: 0.5rem 1rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-family: inherit;
-      font-size: 0.85rem;
-      transition: all 0.2s;
+    .card-sub { font-size: 0.78em; font-weight: 400; color: var(--text2); }
+    .c-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 12px; border-bottom: 1px solid var(--border);
+      font-size: 0.82em;
     }
-
-    .upload-btn:hover {
-      border-color: var(--accent);
-      color: var(--accent);
+    .c-row:last-child { border-bottom: none; }
+    .sec-label {
+      font-size: 0.68em; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--text3); margin: 10px 0 5px;
     }
+    .sec-label:first-child { margin-top: 0; }
 
-    .search-box {
-      width: 100%;
-      padding: 0.75rem 1rem;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      font-family: inherit;
-      font-size: 0.95rem;
-      margin-bottom: 1rem;
-      outline: none;
-      transition: border-color 0.2s;
+    /* Badges */
+    .badge { font-size: 0.7em; font-weight: 600; padding: 1px 7px; border-radius: 20px; white-space: nowrap; }
+    .badge.pub   { background: var(--green-bg); color: var(--green); }
+    .badge.priv  { background: var(--bg); color: var(--text3); font-style: italic; }
+    .badge.gm    { background: var(--accent-bg); color: var(--accent-txt); }
+    .badge.live  { background: var(--green-bg); color: var(--green); }
+    .badge.paused-b { background: var(--amber-bg); color: var(--amber); }
+
+    /* Buttons */
+    .btn {
+      padding: 6px 12px; font-size: 0.82em; border-radius: 6px;
+      cursor: pointer; border: 1px solid var(--border2);
+      background: var(--bg3); color: var(--text2); transition: all 0.15s;
     }
+    .btn:hover { color: var(--text); border-color: var(--border2); background: var(--bg2); }
+    .btn.amber { border-color: var(--accent2); background: var(--accent-bg); color: var(--accent-txt); font-weight: 600; }
+    .btn.amber:hover { background: var(--accent-bg); opacity: 0.85; }
+    .btn.green { border-color: var(--green); background: var(--green-bg); color: var(--green); }
+    .btn.danger { border-color: var(--red); color: var(--red); }
+    .btn.danger:hover { background: var(--red-bg); }
+    .btn.full { width: 100%; text-align: center; }
 
-    .search-box:focus {
-      border-color: var(--accent-dim);
+    /* Inputs */
+    .txt-input {
+      padding: 6px 10px; border: 1px solid var(--border2); border-radius: 6px;
+      background: var(--bg); color: var(--text); font-size: 0.82em; outline: none;
     }
-
-    .search-box::placeholder {
-      color: var(--text-dim);
+    .txt-input:focus { border-color: var(--accent); }
+    .txt-input::placeholder { color: var(--text3); }
+    .num-input {
+      padding: 4px 6px; border: 1px solid var(--border2); border-radius: 5px;
+      background: var(--bg); color: var(--text); font-size: 0.82em;
+      outline: none; text-align: center;
     }
+    .num-input:focus { border-color: var(--accent); }
 
-    .track-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
+    /* ── AUDIO TAB ── */
+    .audio-layout { display: grid; grid-template-columns: 240px 1fr; height: 100%; overflow: hidden; }
+    .audio-library { border-right: 1px solid var(--border); background: var(--bg2); display: flex; flex-direction: column; overflow: hidden; }
+    .audio-lib-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .audio-lib-head h2 { font-size: 0.82em; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.08em; }
+    .lib-cat-tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .lib-cat-tab { flex: 1; padding: 7px; font-size: 0.75em; text-align: center; cursor: pointer; color: var(--text2); border-bottom: 2px solid transparent; }
+    .lib-cat-tab.active.bgm  { color: var(--bgm-c); border-bottom-color: var(--bgm-c); }
+    .lib-cat-tab.active.amb  { color: var(--amb-c); border-bottom-color: var(--amb-c); }
+    .lib-cat-tab.active.sfx  { color: var(--sfx-c); border-bottom-color: var(--sfx-c); }
+    .lib-search { padding: 8px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .lib-search input { width: 100%; }
+    .lib-list { flex: 1; overflow-y: auto; }
+    .lib-track {
+      display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+      border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s;
     }
+    .lib-track:hover { background: var(--bg3); }
+    .lib-track:last-child { border-bottom: none; }
+    .lib-track-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .lib-track-dot.bgm  { background: var(--bgm-c); }
+    .lib-track-dot.amb  { background: var(--amb-c); }
+    .lib-track-dot.sfx  { background: var(--sfx-c); }
+    .lib-track-dot.playing { box-shadow: 0 0 0 2px var(--bg2), 0 0 0 3px var(--green); background: var(--green); }
+    .lib-track-name { flex: 1; font-size: 0.82em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .lib-track-dur  { font-size: 0.72em; color: var(--text3); }
+    .lib-track-acts { display: none; gap: 3px; }
+    .lib-track:hover .lib-track-acts { display: flex; }
+    .lib-act-btn { width: 22px; height: 22px; border-radius: 4px; border: none; cursor: pointer; font-size: 0.7em; display: flex; align-items: center; justify-content: center; }
+    .lib-act-btn.b { background: rgba(122,162,247,0.2); color: var(--bgm-c); }
+    .lib-act-btn.a { background: rgba(158,206,106,0.2); color: var(--amb-c); }
+    .lib-act-btn.s { background: rgba(247,118,142,0.2); color: var(--sfx-c); }
+    .lib-act-btn.x { background: rgba(255,255,255,0.05); color: var(--text3); }
+    .lib-act-btn:hover { filter: brightness(1.3); }
 
-    .track-item {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 0.875rem 1rem;
-      cursor: grab;
-      transition: all 0.2s;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+    .audio-controls { padding: 14px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
 
-    .track-item:hover {
-      background: var(--bg-hover);
-      border-color: var(--border-glow);
-      transform: translateX(4px);
-    }
-
-    .track-item.dragging {
-      opacity: 0.5;
-      cursor: grabbing;
-    }
-
-    .track-name {
-      font-size: 0.95rem;
-      color: var(--text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      flex: 1;
-    }
-
-    .track-actions {
-      display: flex;
-      gap: 0.25rem;
-      opacity: 0;
-      transition: opacity 0.2s;
-    }
-
-    .track-item:hover .track-actions {
-      opacity: 1;
-    }
-
-    .track-btn {
-      width: 28px;
-      height: 28px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 0.75rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    /* Channel card */
+    .ch-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .ch-card-head { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-bottom: 1px solid var(--border); }
+    .ch-label { font-size: 0.82em; font-weight: 600; flex: 1; }
+    .ch-label.bgm  { color: var(--bgm-c); }
+    .ch-label.amb  { color: var(--amb-c); }
+    .ch-label.sfx  { color: var(--sfx-c); }
+    .ch-status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text3); flex-shrink: 0; }
+    .ch-status-dot.playing { background: var(--green); }
+    .ch-drop {
+      padding: 14px 12px; text-align: center; color: var(--text3); font-size: 0.8em;
+      border: 1px dashed var(--border2); border-radius: 6px; margin: 10px; cursor: default;
       transition: all 0.15s;
     }
-
-    .track-btn.bgm { background: rgba(122, 162, 247, 0.2); color: var(--bgm); }
-    .track-btn.amb { background: rgba(158, 206, 106, 0.2); color: var(--ambience); }
-    .track-btn.sfx { background: rgba(247, 118, 142, 0.2); color: var(--sfx); }
-    .track-btn.del { background: rgba(255, 255, 255, 0.05); color: var(--text-dim); }
-
-    .track-btn:hover {
-      transform: scale(1.1);
-      filter: brightness(1.2);
+    .ch-drop.drag-over { border-color: var(--accent); background: var(--accent-bg); color: var(--accent-txt); }
+    .ch-drop.has-track { border-style: solid; border-color: var(--border2); color: var(--text); font-weight: 500; text-align: left; }
+    .ch-transport { display: none; align-items: center; gap: 6px; padding: 0 12px 8px; flex-wrap: wrap; }
+    .ch-transport.visible { display: flex; }
+    .tr-btn {
+      width: 30px; height: 30px; border: 1px solid var(--border2); border-radius: 6px;
+      background: var(--bg3); color: var(--text); cursor: pointer; font-size: 0.8em;
+      display: flex; align-items: center; justify-content: center; transition: all 0.15s;
     }
+    .tr-btn:hover { background: var(--bg2); border-color: var(--border2); }
+    .tr-btn.play-btn { background: var(--accent2); border-color: var(--accent2); color: var(--accent-lt); }
+    .tr-btn.play-btn:hover { opacity: 0.85; }
+    .tr-btn.loop-btn.active { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+    .vol-row-inline { display: flex; align-items: center; gap: 6px; padding: 0 12px 8px; }
+    .vol-row-inline input[type=range] { flex: 1; }
+    .vol-pct { font-size: 0.75em; color: var(--accent); font-weight: 600; min-width: 30px; text-align: right; }
+    .prog-wrap { padding: 0 12px 8px; }
+    .prog-bar { height: 4px; background: var(--bg); border-radius: 2px; cursor: pointer; position: relative; }
+    .prog-fill { height: 100%; background: var(--accent2); border-radius: 2px; width: 0%; pointer-events: none; }
+    .time-row { display: flex; justify-content: space-between; font-size: 0.7em; color: var(--text3); margin-top: 3px; }
+    .fade-row { display: flex; gap: 5px; padding: 0 12px 10px; }
 
-    /* Control Panels */
-    .control-area {
-      background: var(--bg-deep);
-      padding: 2rem;
-      overflow-y: auto;
-    }
-
-    .panels {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-      gap: 1.5rem;
-      max-width: 1400px;
-      margin: 0 auto;
-    }
-
-    .panel {
-      background: var(--bg-panel);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.5rem;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .panel::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 3px;
-      border-radius: 12px 12px 0 0;
-    }
-
-    .panel.bgm::before { background: var(--bgm); }
-    .panel.ambience::before { background: var(--ambience); }
-    .panel.sfx::before { background: var(--sfx); }
-    .panel.master::before { background: linear-gradient(90deg, var(--bgm), var(--ambience), var(--sfx)); }
-
-    .panel-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.25rem;
-    }
-
-    .panel h3 {
-      font-family: 'Cinzel', serif;
-      font-size: 1.1rem;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-    }
-
-    .panel.bgm h3 { color: var(--bgm); }
-    .panel.ambience h3 { color: var(--ambience); }
-    .panel.sfx h3 { color: var(--sfx); }
-    .panel.master h3 { color: var(--gold); }
-
-    .panel-badge {
-      font-size: 0.7rem;
-      padding: 0.25rem 0.75rem;
-      border-radius: 20px;
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text-dim);
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-    }
-
-    /* Drop Zone */
-    .drop-zone {
-      border: 2px dashed var(--border);
-      border-radius: 8px;
-      padding: 2rem;
-      text-align: center;
-      color: var(--text-dim);
-      transition: all 0.2s;
-      margin-bottom: 1rem;
-      min-height: 100px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-    }
-
-    .drop-zone.active {
-      border-color: var(--accent);
-      background: rgba(157, 124, 216, 0.1);
-    }
-
-    .drop-zone.has-track {
-      border-style: solid;
-      padding: 1rem;
-    }
-
-    .drop-zone .track-info {
-      font-size: 1.1rem;
-      color: var(--text);
-      font-weight: 500;
-    }
-
-    .drop-zone .icon {
-      font-size: 1.5rem;
-      opacity: 0.5;
-    }
-
-    /* Transport Controls */
-    .transport {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin-bottom: 1rem;
-    }
-
-    .transport-btn {
-      width: 44px;
-      height: 44px;
-      border: 1px solid var(--border);
-      border-radius: 50%;
-      background: var(--bg-card);
-      color: var(--text);
-      cursor: pointer;
-      font-size: 1.1rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
-    }
-
-    .transport-btn:hover {
-      background: var(--bg-hover);
-      border-color: var(--border-glow);
-      transform: scale(1.05);
-    }
-
-    .transport-btn.play {
-      width: 52px;
-      height: 52px;
-      font-size: 1.25rem;
-    }
-
-    .transport-btn.playing {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: var(--bg-deep);
-    }
-
-    /* Progress Bar */
-    .progress-container {
-      margin-bottom: 1rem;
-    }
-
-    .progress-bar {
-      width: 100%;
-      height: 6px;
-      background: var(--bg-card);
-      border-radius: 3px;
-      cursor: pointer;
-      overflow: hidden;
-    }
-
-    .progress-fill {
-      height: 100%;
-      background: var(--accent);
-      border-radius: 3px;
-      width: 0%;
-      transition: width 0.1s linear;
-    }
-
-    .time-display {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.8rem;
-      color: var(--text-dim);
-      margin-top: 0.5rem;
-      font-variant-numeric: tabular-nums;
-    }
-
-    /* Volume Slider */
-    .volume-control {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-
-    .volume-icon {
-      color: var(--text-dim);
-      font-size: 1rem;
-    }
-
-    .volume-slider {
-      flex: 1;
-      height: 6px;
-      background: var(--bg-card);
-      border-radius: 3px;
-      cursor: pointer;
-      -webkit-appearance: none;
-      appearance: none;
-    }
-
-    .volume-slider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 16px;
-      height: 16px;
-      background: var(--text);
-      border-radius: 50%;
-      cursor: pointer;
-      transition: transform 0.1s;
-    }
-
-    .volume-slider::-webkit-slider-thumb:hover {
-      transform: scale(1.2);
-    }
-
-    .volume-value {
-      width: 40px;
-      text-align: right;
-      font-size: 0.85rem;
-      color: var(--text-dim);
-      font-variant-numeric: tabular-nums;
-    }
-
-    /* Toggle */
-    .toggle-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: 1rem;
-      padding-top: 1rem;
-      border-top: 1px solid var(--border);
-    }
-
-    .toggle-label {
-      font-size: 0.9rem;
-      color: var(--text-dim);
-    }
-
-    .toggle {
-      width: 44px;
-      height: 24px;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      cursor: pointer;
-      position: relative;
-      transition: all 0.2s;
-    }
-
-    .toggle.active {
-      background: var(--accent);
-      border-color: var(--accent);
-    }
-
-    .toggle::after {
-      content: '';
-      position: absolute;
-      top: 3px;
-      left: 3px;
-      width: 16px;
-      height: 16px;
-      background: var(--text);
-      border-radius: 50%;
-      transition: transform 0.2s;
-    }
-
-    .toggle.active::after {
-      transform: translateX(20px);
-      background: var(--bg-deep);
-    }
-
-    /* SFX Grid */
-    .sfx-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-      gap: 0.75rem;
-    }
-
+    /* SFX pads */
+    .sfx-pads { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 6px; padding: 10px 12px; }
     .sfx-pad {
-      aspect-ratio: 1;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-      padding: 0.5rem;
-      transition: all 0.15s;
-      text-align: center;
+      aspect-ratio: 1; background: var(--bg3); border: 1px solid var(--border2);
+      border-radius: 8px; cursor: pointer; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 4px; padding: 6px;
+      transition: all 0.12s; font-size: 0.72em; color: var(--text2); text-align: center;
     }
+    .sfx-pad:hover { background: var(--bg2); border-color: var(--sfx-c); color: var(--text); }
+    .sfx-pad:active { transform: scale(0.95); }
+    .sfx-pad.firing { background: rgba(247,118,142,0.2); border-color: var(--sfx-c); }
+    .sfx-pad.empty  { border-style: dashed; color: var(--text3); cursor: default; }
+    .sfx-pad.empty:hover { background: var(--bg3); border-color: var(--border2); }
 
-    .sfx-pad:hover {
-      background: var(--bg-hover);
-      border-color: var(--sfx);
-      transform: scale(1.02);
+    .master-row { display: flex; gap: 6px; padding: 10px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+
+    /* ── DICE TAB ── */
+    .dice-layout { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 14px; padding: 14px; }
+    @media (max-width: 860px) { .dice-layout { grid-template-columns: 1fr; } }
+
+    /* die selector */
+    .die-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .die-btn {
+      width: 48px; height: 48px; border: 1px solid var(--border2); border-radius: 8px;
+      background: var(--bg3); color: var(--text2); cursor: pointer; font-size: 0.82em;
+      font-weight: 600; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 1px; transition: all 0.12s; user-select: none;
     }
+    .die-btn:hover { border-color: var(--accent); color: var(--text); }
+    .die-btn.has { border-color: var(--accent2); background: var(--accent-bg); color: var(--accent); }
+    .die-btn-sub { font-size: 0.62em; font-weight: 400; opacity: 0.7; }
 
-    .sfx-pad:active {
-      transform: scale(0.98);
-      background: rgba(247, 118, 142, 0.2);
+    .pool-list { min-height: 28px; margin-bottom: 8px; }
+    .pool-empty { font-size: 0.78em; color: var(--text3); padding: 4px 0; }
+    .pool-row {
+      display: flex; align-items: center; gap: 8px; padding: 4px 8px;
+      background: var(--bg3); border-radius: 5px; margin-bottom: 3px;
     }
+    .pool-lbl { font-size: 0.82em; font-weight: 600; flex: 1; }
+    .qty-btn { width: 20px; height: 20px; border: 1px solid var(--border2); border-radius: 3px; background: var(--bg2); color: var(--text); font-size: 0.85em; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .qty-btn:hover { border-color: var(--accent); }
+    .qty-val { font-size: 0.8em; font-weight: 600; min-width: 12px; text-align: center; }
+    .remove-btn { font-size: 0.7em; color: var(--text3); background: none; border: none; cursor: pointer; padding: 2px 4px; }
+    .remove-btn:hover { color: var(--red); }
 
-    .sfx-pad.playing {
-      background: rgba(247, 118, 142, 0.3);
-      border-color: var(--sfx);
-      box-shadow: 0 0 20px rgba(247, 118, 142, 0.3);
+    /* modifier rows */
+    .mod-rows { display: flex; flex-direction: column; gap: 3px; margin-bottom: 8px; }
+    .mod-row  { display: flex; align-items: center; gap: 6px; }
+    .mod-tag  { font-size: 0.68em; font-weight: 600; padding: 2px 7px; border-radius: 20px; min-width: 42px; text-align: center; }
+    .mod-tag.prof   { background: #1e1a38; color: #7c6fd4; }
+    .mod-tag.item   { background: #0d2920; color: #1d9e75; }
+    .mod-tag.status { background: #251a08; color: #ba7517; }
+    .mod-tag.circ   { background: #2a1210; color: #d85a30; }
+    .mod-input { width: 52px; font-size: 0.82em; text-align: center; }
+    .mod-total-row { font-size: 0.78em; color: var(--text2); padding-top: 4px; border-top: 1px solid var(--border); }
+    #gm-mod-total { font-weight: 600; }
+
+    .dice-label-row { display: grid; grid-template-columns: 1fr 56px; gap: 6px; margin-bottom: 8px; }
+    .dice-dc-row    { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 0.82em; color: var(--text2); }
+
+    /* roll mode toggle */
+    .roll-mode { display: flex; border: 1px solid var(--border2); border-radius: 6px; overflow: hidden; margin-bottom: 10px; }
+    .roll-mode-btn { flex: 1; padding: 7px; font-size: 0.8em; text-align: center; cursor: pointer; background: var(--bg3); color: var(--text2); border: none; transition: all 0.12s; }
+    .roll-mode-btn.active.secret { background: var(--accent-bg); color: var(--accent-txt); font-weight: 600; }
+    .roll-mode-btn.active.npc    { background: var(--green-bg);  color: var(--green);     font-weight: 600; }
+
+    #gm-roll-btn { width: 100%; padding: 9px; font-size: 0.88em; font-weight: 600; border: none; border-radius: 7px; background: var(--accent2); color: var(--accent-lt); cursor: pointer; transition: opacity 0.15s; }
+    #gm-roll-btn:hover:not(:disabled) { opacity: 0.85; }
+    #gm-roll-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* 3D tray */
+    .dice-3d-wrap { width: 100%; aspect-ratio: 16/9; background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 10px; }
+    #gm-dice-3d { width: 100%; height: 100%; }
+
+    /* result card */
+    .gm-result-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; text-align: center; margin-bottom: 10px; }
+    .gm-dos-label { font-size: 0.75em; font-weight: 600; letter-spacing: 0.04em; min-height: 1em; margin-bottom: 3px; }
+    .gm-dos-label.dos-cs { color: var(--green); }
+    .gm-dos-label.dos-s  { color: var(--blue); }
+    .gm-dos-label.dos-f  { color: var(--amber); }
+    .gm-dos-label.dos-cf { color: var(--red); }
+    .gm-total { font-size: 2.4em; font-weight: 700; line-height: 1; margin-bottom: 3px; }
+    .gm-total.nat20 { color: var(--green); }
+    .gm-total.nat1  { color: var(--red); }
+    .gm-formula { font-size: 0.75em; color: var(--text2); }
+    .nat-pill { display: inline-block; font-size: 0.7em; font-weight: 600; padding: 2px 7px; border-radius: 20px; }
+    .nat-pill.nat20 { background: var(--green-bg); color: var(--green); }
+    .nat-pill.nat1  { background: var(--red-bg);   color: var(--red); }
+
+    /* feed */
+    .feed-entry { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+    .feed-entry:last-child { border-bottom: none; }
+    .feed-entry.redacted { opacity: 0.5; }
+    .feed-row1 { display: flex; align-items: baseline; gap: 6px; margin-bottom: 2px; }
+    .feed-name  { font-size: 0.82em; font-weight: 600; }
+    .feed-lbl   { font-size: 0.75em; color: var(--text2); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .feed-time  { font-size: 0.7em; color: var(--text3); white-space: nowrap; }
+    .feed-row2  { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+    .feed-total { font-size: 1.25em; font-weight: 600; }
+    .feed-total.nat20 { color: var(--green); }
+    .feed-total.nat1  { color: var(--red); }
+    .feed-formula { font-size: 0.75em; color: var(--text2); }
+    .dos-pill { font-size: 0.65em; font-weight: 600; padding: 1px 6px; border-radius: 20px; }
+    .dos-pill.dos-cs { background: var(--green-bg); color: var(--green); }
+    .dos-pill.dos-s  { background: var(--blue-bg);  color: var(--blue); }
+    .dos-pill.dos-f  { background: var(--amber-bg); color: var(--amber); }
+    .dos-pill.dos-cf { background: var(--red-bg);   color: var(--red); }
+    .reveal-btn { font-size: 0.68em; padding: 1px 6px; border-radius: 4px; border: 1px solid var(--border2); background: none; color: var(--text3); cursor: pointer; }
+    .reveal-btn:hover { border-color: var(--green); color: var(--green); }
+    .feed-empty { font-size: 0.8em; color: var(--text3); padding: 16px; text-align: center; }
+
+    /* ── OVERWORLD TAB ── */
+    .overworld-layout { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+    .map-toolbar { display: flex; align-items: center; gap: 6px; padding: 7px 12px; background: var(--bg2); border-bottom: 1px solid var(--border); flex-shrink: 0; flex-wrap: wrap; }
+    .tool-btn { padding: 5px 10px; font-size: 0.78em; border: 1px solid var(--border2); border-radius: 5px; background: var(--bg3); color: var(--text2); cursor: pointer; transition: all 0.12s; }
+    .tool-btn:hover { color: var(--text); border-color: var(--border2); }
+    .tool-btn.active { background: var(--accent-bg); border-color: var(--accent2); color: var(--accent-txt); font-weight: 600; }
+    .tool-sep { width: 1px; height: 20px; background: var(--border2); margin: 0 2px; }
+    .terrain-swatches { display: flex; gap: 3px; align-items: center; }
+    .t-swatch { width: 18px; height: 18px; border-radius: 3px; cursor: pointer; border: 2px solid transparent; transition: all 0.1s; }
+    .t-swatch.active { border-color: var(--text); }
+    .t-swatch:hover { transform: scale(1.15); }
+    .map-canvas-wrap { flex: 1; position: relative; overflow: hidden; background: var(--bg); }
+    #overworld-canvas { width: 100%; height: 100%; display: block; cursor: crosshair; }
+    .map-placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; color: var(--text3); pointer-events: none; }
+    .map-placeholder-icon { font-size: 2.5em; opacity: 0.2; }
+
+    /* ── BATTLE MAP TAB ── */
+    .battle-layout { display: flex; flex-direction: column; height: 100%; }
+    .battle-toolbar { display: flex; align-items: center; gap: 6px; padding: 7px 12px; background: var(--bg2); border-bottom: 1px solid var(--border); flex-shrink: 0; flex-wrap: wrap; }
+    .battle-canvas-wrap { flex: 1; position: relative; overflow: hidden; background: var(--bg); }
+    #battle-canvas { display: block; cursor: crosshair; }
+    .grid-settings { display: flex; align-items: center; gap: 8px; margin-left: auto; font-size: 0.78em; color: var(--text2); }
+
+    /* ── PARTY TAB ── */
+    .party-layout { padding: 14px; max-width: 900px; }
+    .party-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+    .party-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .party-card-head { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+    .party-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.85em; font-weight: 700; flex-shrink: 0; }
+    .party-name-block { flex: 1; }
+    .party-name { font-size: 0.88em; font-weight: 600; }
+    .party-class { font-size: 0.75em; color: var(--text2); }
+    .party-online { width: 7px; height: 7px; border-radius: 50%; background: var(--text3); flex-shrink: 0; }
+    .party-online.on { background: var(--green); }
+    .party-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; border-bottom: 1px solid var(--border); }
+    .party-stat { padding: 8px 10px; border-right: 1px solid var(--border); text-align: center; }
+    .party-stat:last-child { border-right: none; }
+    .party-stat-label { font-size: 0.65em; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px; }
+    .party-stat-val { font-size: 1em; font-weight: 600; }
+    .party-hp-row { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+    .party-hp-label { font-size: 0.75em; color: var(--text2); min-width: 20px; }
+    .party-hp-bar { flex: 1; height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; }
+    .party-hp-fill { height: 100%; background: var(--green); border-radius: 3px; transition: width 0.3s; }
+    .party-hp-fill.low { background: var(--amber); }
+    .party-hp-fill.crit { background: var(--red); }
+    .party-hp-nums { font-size: 0.78em; font-weight: 600; white-space: nowrap; }
+    .party-conditions { padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 4px; min-height: 36px; }
+    .condition-tag { font-size: 0.68em; padding: 2px 7px; border-radius: 20px; background: var(--bg3); border: 1px solid var(--border2); color: var(--text2); display: flex; align-items: center; gap: 4px; }
+    .condition-tag .remove-c { cursor: pointer; color: var(--text3); }
+    .condition-tag .remove-c:hover { color: var(--red); }
+    .add-condition-btn { font-size: 0.68em; padding: 2px 7px; border-radius: 20px; border: 1px dashed var(--border2); color: var(--text3); cursor: pointer; background: none; }
+    .add-condition-btn:hover { border-color: var(--accent); color: var(--accent-txt); }
+    .party-quick-hp { display: flex; align-items: center; gap: 5px; padding: 7px 12px; border-top: 1px solid var(--border); }
+    .hp-adj-btn { width: 24px; height: 24px; border: 1px solid var(--border2); border-radius: 4px; background: var(--bg3); color: var(--text); cursor: pointer; font-size: 0.9em; display: flex; align-items: center; justify-content: center; }
+    .hp-adj-btn:hover { border-color: var(--accent); }
+    .hp-adj-input { width: 44px; font-size: 0.78em; text-align: center; padding: 3px; border: 1px solid var(--border2); border-radius: 4px; background: var(--bg); color: var(--text); outline: none; }
+    .hp-adj-label { font-size: 0.72em; color: var(--text3); flex: 1; }
+
+    /* ── RIGHT PANEL CONTENT ── */
+    /* dice feed panel (always visible) */
+    .rp-dice-feed { max-height: 300px; overflow-y: auto; background: var(--bg3); border-radius: 8px; border: 1px solid var(--border); }
+
+    /* party mini tracker in rp */
+    .rp-pc-row { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-bottom: 1px solid var(--border); }
+    .rp-pc-row:last-child { border-bottom: none; }
+    .rp-avatar { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.72em; font-weight: 700; flex-shrink: 0; }
+    .rp-pc-name { font-size: 0.82em; font-weight: 500; flex: 1; }
+    .rp-hp-input { width: 40px; font-size: 0.78em; }
+    .rp-hp-max  { font-size: 0.72em; color: var(--text3); }
+
+    /* notes */
+    #gm-notes { width: 100%; height: 200px; background: var(--bg3); border: 1px solid var(--border2); border-radius: 8px; color: var(--text); font-size: 0.82em; padding: 10px; resize: none; outline: none; font-family: inherit; line-height: 1.6; }
+    #gm-notes:focus { border-color: var(--accent); }
+
+    /* map rp */
+    .loc-row { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-bottom: 1px solid var(--border); font-size: 0.8em; cursor: pointer; }
+    .loc-row:last-child { border-bottom: none; }
+    .loc-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .loc-name { flex: 1; }
+    .loc-state { font-size: 0.7em; color: var(--text3); }
+
+    /* ── MODAL ── */
+    .modal-wrap { position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: none; align-items: center; justify-content: center; z-index: 200; }
+    .modal-wrap.open { display: flex; }
+    .modal { background: var(--bg2); border: 1px solid var(--border2); border-radius: 14px; padding: 24px; width: 90%; max-width: 440px; }
+    .modal h3 { font-size: 1em; font-weight: 600; margin-bottom: 16px; }
+    .modal-opts { display: flex; flex-direction: column; gap: 8px; }
+    .modal-opt { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--border2); border-radius: 8px; cursor: pointer; transition: background 0.15s; }
+    .modal-opt:hover { background: var(--bg3); }
+    .modal-opt-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.1em; flex-shrink: 0; }
+    .modal-opt-icon.bgm { background: rgba(122,162,247,0.2); }
+    .modal-opt-icon.amb { background: rgba(158,206,106,0.2); }
+    .modal-opt-icon.sfx { background: rgba(247,118,142,0.2); }
+    .modal-opt-info { flex: 1; }
+    .modal-opt-title { font-size: 0.88em; font-weight: 500; }
+    .modal-opt-sub   { font-size: 0.75em; color: var(--text2); }
+    .modal-cancel { margin-top: 14px; width: 100%; }
+
+    /* ── TOAST ── */
+    .toast-wrap { position: fixed; bottom: 20px; right: 20px; z-index: 999; display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
+    .toast { background: var(--bg2); border: 1px solid var(--border2); border-radius: 8px; padding: 10px 16px; font-size: 0.85em; animation: slideIn 0.25s ease; }
+    @keyframes slideIn { from { transform: translateX(60px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+    /* ── SCROLLBARS ── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+    /* ── TABLET ── */
+    @media (max-width: 900px) {
+      .audio-layout { grid-template-columns: 200px 1fr; }
+      .right-panel { width: 260px; }
     }
-
-    .sfx-pad .icon {
-      font-size: 1.5rem;
-    }
-
-    .sfx-pad .name {
-      font-size: 0.75rem;
-      color: var(--text-dim);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      width: 100%;
-    }
-
-    .sfx-empty {
-      border-style: dashed;
-      color: var(--text-dim);
-      font-size: 0.8rem;
-    }
-
-    /* Master Panel */
-    .master-controls {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 1rem;
-    }
-
-    .master-btn {
-      padding: 1rem 1.5rem;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: var(--bg-card);
-      color: var(--text);
-      font-family: 'Cinzel', serif;
-      font-size: 0.9rem;
-      letter-spacing: 0.1em;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .master-btn:hover {
-      background: var(--bg-hover);
-      border-color: var(--border-glow);
-    }
-
-    .master-btn.danger {
-      border-color: rgba(247, 118, 142, 0.3);
-    }
-
-    .master-btn.danger:hover {
-      background: rgba(247, 118, 142, 0.2);
-      border-color: var(--sfx);
-    }
-
-    /* Hidden file input */
-    #file-upload {
-      display: none;
-    }
-
-    /* Fade controls */
-    .fade-controls {
-      display: flex;
-      gap: 0.5rem;
-      margin-top: 0.75rem;
-    }
-
-    .fade-btn {
-      flex: 1;
-      padding: 0.5rem;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      background: var(--bg-card);
-      color: var(--text-dim);
-      font-size: 0.8rem;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .fade-btn:hover {
-      background: var(--bg-hover);
-      color: var(--text);
-    }
-
-    /* Scrollbar */
-    ::-webkit-scrollbar {
-      width: 8px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: var(--bg-deep);
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: var(--border);
-      border-radius: 4px;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-      background: var(--border-glow);
-    }
-
-    /* Toast notifications */
-    .toast-container {
-      position: fixed;
-      bottom: 2rem;
-      right: 2rem;
-      z-index: 1000;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .toast {
-      background: var(--bg-panel);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 1rem 1.5rem;
-      color: var(--text);
-      font-size: 0.9rem;
-      animation: slideIn 0.3s ease;
-      box-shadow: 0 4px 20px var(--shadow);
-    }
-
-    @keyframes slideIn {
-      from { transform: translateX(100%); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
-    }
-
-    /* Category Tabs */
-    .category-tabs {
-      display: flex;
-      gap: 0.25rem;
-      margin-bottom: 1rem;
-    }
-
-    .category-tab {
-      flex: 1;
-      padding: 0.5rem;
-      border: 1px solid var(--border);
-      background: var(--bg-card);
-      color: var(--text-dim);
-      font-size: 0.75rem;
-      font-family: 'Cinzel', serif;
-      letter-spacing: 0.05em;
-      cursor: pointer;
-      transition: all 0.2s;
-      text-align: center;
-    }
-
-    .category-tab:first-child { border-radius: 6px 0 0 6px; }
-    .category-tab:last-child { border-radius: 0 6px 6px 0; }
-
-    .category-tab:hover { background: var(--bg-hover); }
-
-    .category-tab.active {
-      color: var(--text-bright);
-      border-color: var(--border-glow);
-    }
-
-    .category-tab.active.bgm { background: rgba(122, 162, 247, 0.2); border-color: var(--bgm); }
-    .category-tab.active.ambience { background: rgba(158, 206, 106, 0.2); border-color: var(--ambience); }
-    .category-tab.active.sfx { background: rgba(247, 118, 142, 0.2); border-color: var(--sfx); }
-
-    .category-badge {
-      display: inline-block;
-      padding: 0.1rem 0.4rem;
-      border-radius: 4px;
-      font-size: 0.65rem;
-      margin-left: 0.5rem;
-      vertical-align: middle;
-    }
-
-    .category-badge.bgm { background: rgba(122, 162, 247, 0.3); color: var(--bgm); }
-    .category-badge.ambience { background: rgba(158, 206, 106, 0.3); color: var(--ambience); }
-    .category-badge.sfx { background: rgba(247, 118, 142, 0.3); color: var(--sfx); }
-
-    /* Upload Modal */
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.8);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 200;
-    }
-
-    .modal-overlay.active { display: flex; }
-
-    .modal {
-      background: var(--bg-panel);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 2rem;
-      max-width: 500px;
-      width: 90%;
-    }
-
-    .modal h3 {
-      font-family: 'Cinzel', serif;
-      font-size: 1.25rem;
-      margin-bottom: 1.5rem;
-      color: var(--text-bright);
-    }
-
-    .upload-options {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-
-    .upload-option {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      padding: 1rem;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .upload-option:hover {
-      background: var(--bg-hover);
-    }
-
-    .upload-option.bgm:hover { border-color: var(--bgm); }
-    .upload-option.ambience:hover { border-color: var(--ambience); }
-    .upload-option.sfx:hover { border-color: var(--sfx); }
-
-    .upload-option-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.25rem;
-    }
-
-    .upload-option.bgm .upload-option-icon { background: rgba(122, 162, 247, 0.2); }
-    .upload-option.ambience .upload-option-icon { background: rgba(158, 206, 106, 0.2); }
-    .upload-option.sfx .upload-option-icon { background: rgba(247, 118, 142, 0.2); }
-
-    .upload-option-info { flex: 1; }
-    .upload-option-title { font-weight: 600; color: var(--text); }
-    .upload-option-limit { font-size: 0.8rem; color: var(--text-dim); }
-
-    .modal-close {
-      margin-top: 1.5rem;
-      width: 100%;
-      padding: 0.75rem;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      background: var(--bg-card);
-      color: var(--text);
-      cursor: pointer;
-      font-family: inherit;
-      transition: all 0.2s;
-    }
-
-    .modal-close:hover {
-      background: var(--bg-hover);
+    @media (max-width: 700px) {
+      .audio-layout { grid-template-columns: 1fr; }
+      .audio-library { max-height: 200px; }
+      .right-panel { display: none; }
+      .divider { display: none; }
     }
   </style>
 </head>
 <body>
-  <header>
-    <div class="logo">Soundboard</div>
-    <div class="connection-status">
-      <div class="status-item">
-        <span class="status-dot dm connected"></span>
-        <span>DM Connected</span>
-      </div>
-      <div class="status-item">
-        <span class="status-dot" id="player-status"></span>
-        <span id="player-count">0 Players</span>
+<div id="app">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <span class="topbar-logo">Eldoria</span>
+    <span class="gm-badge">GM</span>
+    <div class="topbar-tabs">
+      <div class="tab active" data-tab="audio"     onclick="switchTab('audio')">&#9835; Audio</div>
+      <div class="tab"        data-tab="dice"      onclick="switchTab('dice')">&#9861; Dice</div>
+      <div class="tab"        data-tab="overworld" onclick="switchTab('overworld')">&#11043; Overworld</div>
+      <div class="tab"        data-tab="battle"    onclick="switchTab('battle')">&#9633; Battle map</div>
+      <div class="tab"        data-tab="party"     onclick="switchTab('party')">&#128100; Party</div>
+    </div>
+    <div class="topbar-status">
+      <div class="conn-dot off" id="conn-dot"></div>
+      <span id="conn-text" style="color:var(--text2);">Connecting...</span>
+      <div id="player-chips"></div>
+    </div>
+  </div>
+
+  <div class="shell">
+
+    <!-- MAIN CONTENT AREA -->
+    <div class="main-content">
+
+      <!-- ── AUDIO TAB ── -->
+      <div class="tab-page active" id="tab-audio">
+        <div class="audio-layout" style="height:100%;overflow:hidden;">
+
+          <!-- Library sidebar -->
+          <div class="audio-library">
+            <div class="audio-lib-head">
+              <h2>Library</h2>
+              <button class="btn amber" onclick="openUpload()" style="padding:4px 10px;font-size:0.75em;">+ Upload</button>
+            </div>
+            <div class="lib-cat-tabs">
+              <div class="lib-cat-tab bgm active" onclick="setLibCat('bgm')">BGM</div>
+              <div class="lib-cat-tab amb"         onclick="setLibCat('amb')">AMB</div>
+              <div class="lib-cat-tab sfx"         onclick="setLibCat('sfx')">SFX</div>
+            </div>
+            <div class="lib-search">
+              <input class="txt-input" id="lib-search" placeholder="Search tracks..." style="width:100%;" oninput="renderLibrary()">
+            </div>
+            <div class="lib-list" id="lib-list"></div>
+          </div>
+
+          <!-- Playback controls -->
+          <div class="audio-controls">
+
+            <!-- BGM channel -->
+            <div class="ch-card" id="bgm-card">
+              <div class="ch-card-head">
+                <div class="ch-status-dot" id="bgm-status-dot"></div>
+                <span class="ch-label bgm">Background Music</span>
+                <span class="badge live" id="bgm-badge" style="display:none;">Playing</span>
+              </div>
+              <div class="ch-drop" id="bgm-drop" data-channel="bgm">Drop BGM track here or click from library</div>
+              <div class="ch-transport" id="bgm-transport">
+                <button class="tr-btn" onclick="seekBack('bgm')">&#9664;&#9664;</button>
+                <button class="tr-btn play-btn" id="bgm-play-btn" onclick="togglePlay('bgm')">&#9654;</button>
+                <button class="tr-btn" onclick="seekFwd('bgm')">&#9654;&#9654;</button>
+                <button class="tr-btn" onclick="stopCh('bgm')">&#9632;</button>
+                <button class="tr-btn loop-btn" id="bgm-loop-btn" onclick="toggleLoop('bgm')">&#8635;</button>
+              </div>
+              <div class="prog-wrap" id="bgm-prog-wrap" style="display:none;">
+                <div class="prog-bar" id="bgm-prog-bar" onclick="seekClick(event,'bgm')">
+                  <div class="prog-fill" id="bgm-prog-fill"></div>
+                </div>
+                <div class="time-row"><span id="bgm-cur">0:00</span><span id="bgm-dur">0:00</span></div>
+              </div>
+              <div class="vol-row-inline" id="bgm-vol-row">
+                <span style="font-size:0.75em;color:var(--text2);">Vol</span>
+                <input type="range" min="0" max="100" value="50" id="bgm-vol" oninput="setVol('bgm',this.value)">
+                <span class="vol-pct" id="bgm-vol-val">50%</span>
+              </div>
+              <div class="fade-row">
+                <button class="btn" style="flex:1;" onclick="fadeOut('bgm')">Fade out</button>
+                <button class="btn" style="flex:1;" onclick="fadeIn('bgm')">Fade in</button>
+              </div>
+            </div>
+
+            <!-- Ambience channel -->
+            <div class="ch-card" id="amb-card">
+              <div class="ch-card-head">
+                <div class="ch-status-dot" id="amb-status-dot"></div>
+                <span class="ch-label amb">Ambience</span>
+                <span class="badge live" id="amb-badge" style="display:none;">Playing</span>
+              </div>
+              <div class="ch-drop" id="ambience-drop" data-channel="ambience">Drop ambience track here or click from library</div>
+              <div class="ch-transport" id="ambience-transport">
+                <button class="tr-btn" onclick="seekBack('ambience')">&#9664;&#9664;</button>
+                <button class="tr-btn play-btn" id="ambience-play-btn" onclick="togglePlay('ambience')">&#9654;</button>
+                <button class="tr-btn" onclick="seekFwd('ambience')">&#9654;&#9654;</button>
+                <button class="tr-btn" onclick="stopCh('ambience')">&#9632;</button>
+                <button class="tr-btn loop-btn active" id="ambience-loop-btn" onclick="toggleLoop('ambience')">&#8635;</button>
+              </div>
+              <div class="vol-row-inline" id="amb-vol-row">
+                <span style="font-size:0.75em;color:var(--text2);">Vol</span>
+                <input type="range" min="0" max="100" value="30" id="ambience-vol" oninput="setVol('ambience',this.value)">
+                <span class="vol-pct" id="ambience-vol-val">30%</span>
+              </div>
+              <div class="fade-row">
+                <button class="btn" style="flex:1;" onclick="fadeOut('ambience')">Fade out</button>
+                <button class="btn" style="flex:1;" onclick="fadeIn('ambience')">Fade in</button>
+              </div>
+            </div>
+
+            <!-- SFX -->
+            <div class="ch-card">
+              <div class="ch-card-head"><span class="ch-label sfx">Sound Effects</span></div>
+              <div class="sfx-pads" id="sfx-pads"></div>
+            </div>
+
+            <!-- Master -->
+            <div class="master-row">
+              <button class="btn" onclick="fadeOut('bgm');fadeOut('ambience')">Fade all out</button>
+              <button class="btn" onclick="fadeIn('bgm');fadeIn('ambience')">Fade all in</button>
+              <button class="btn danger" onclick="stopAll()">Stop all</button>
+              <button class="btn" onclick="loadTracks();showToast('Library refreshed')">Refresh</button>
+            </div>
+
+          </div>
+        </div>
+      </div><!-- /audio -->
+
+      <!-- ── DICE TAB ── -->
+      <div class="tab-page" id="tab-dice">
+        <div class="dice-layout">
+
+          <!-- Left: Roll builder -->
+          <div>
+            <div class="sec-label">Select dice</div>
+            <div class="die-row">
+              <div class="die-btn" onclick="addDie(4)"><span>d4</span><span class="die-btn-sub" id="die-count-4"></span></div>
+              <div class="die-btn" onclick="addDie(6)"><span>d6</span><span class="die-btn-sub" id="die-count-6"></span></div>
+              <div class="die-btn" onclick="addDie(8)"><span>d8</span><span class="die-btn-sub" id="die-count-8"></span></div>
+              <div class="die-btn" onclick="addDie(10)"><span>d10</span><span class="die-btn-sub" id="die-count-10"></span></div>
+              <div class="die-btn" onclick="addDie(12)"><span>d12</span><span class="die-btn-sub" id="die-count-12"></span></div>
+              <div class="die-btn" onclick="addDie(20)"><span>d20</span><span class="die-btn-sub" id="die-count-20"></span></div>
+              <div class="die-btn" onclick="addDie(100)"><span>d%</span><span class="die-btn-sub" id="die-count-100"></span></div>
+            </div>
+
+            <div class="sec-label">Pool</div>
+            <div class="pool-list" id="gm-pool-list"><div class="pool-empty">Click a die to add it</div></div>
+
+            <div class="sec-label">Modifiers (PF2e)</div>
+            <div class="mod-rows">
+              <div class="mod-row"><span class="mod-tag prof">Prof</span><input class="num-input mod-input" id="gm-mod-prof" type="number" value="0"><span style="font-size:0.75em;color:var(--text3);">proficiency</span></div>
+              <div class="mod-row"><span class="mod-tag item">Item</span><input class="num-input mod-input" id="gm-mod-item" type="number" value="0"><span style="font-size:0.75em;color:var(--text3);">item bonus</span></div>
+              <div class="mod-row"><span class="mod-tag status">Status</span><input class="num-input mod-input" id="gm-mod-status" type="number" value="0"></div>
+              <div class="mod-row"><span class="mod-tag circ">Circ</span><input class="num-input mod-input" id="gm-mod-circ" type="number" value="0"></div>
+              <div class="mod-total-row">Total modifier: <span id="gm-mod-total">+0</span></div>
+            </div>
+
+            <div class="sec-label">Label &amp; DC</div>
+            <div class="dice-label-row">
+              <input class="txt-input" id="gm-roll-label" placeholder="e.g. Kael Perception" style="width:100%;">
+              <input class="num-input" id="gm-roll-dc" placeholder="DC" style="width:100%;">
+            </div>
+
+            <div class="sec-label">Roll as</div>
+            <div class="roll-mode">
+              <button class="roll-mode-btn active secret" data-mode="secret" onclick="setRollMode('secret')">GM secret</button>
+              <button class="roll-mode-btn npc"           data-mode="npc"    onclick="setRollMode('npc')">Public NPC</button>
+            </div>
+            <input class="txt-input" id="gm-npc-name" placeholder="NPC name (for public rolls)" style="width:100%;margin-bottom:10px;display:none;">
+
+            <button id="gm-roll-btn" onclick="gmRoll()" disabled>Select dice above</button>
+          </div>
+
+          <!-- Right: Tray + full feed -->
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div class="sec-label">Roll result</div>
+            <div class="dice-3d-wrap"><div id="gm-dice-3d"></div></div>
+            <div class="gm-result-card" id="gm-tray">
+              <div class="gm-dos-label" id="gm-dos-label"></div>
+              <div class="gm-total" id="gm-total">&mdash;</div>
+              <div class="gm-formula" id="gm-formula">Select dice and roll</div>
+              <span class="nat-pill" id="gm-nat-pill"></span>
+            </div>
+            <div class="sec-label">Full roll feed <span style="font-size:0.85em;font-weight:400;color:var(--text3);">— GM sees all</span></div>
+            <div class="card" style="flex:1;overflow-y:auto;max-height:420px;">
+              <div id="gm-feed-list"><div class="feed-empty">No rolls yet this session</div></div>
+            </div>
+          </div>
+
+        </div>
+      </div><!-- /dice -->
+
+      <!-- ── OVERWORLD TAB ── -->
+      <div class="tab-page" id="tab-overworld">
+        <div class="overworld-layout">
+          <div class="map-toolbar">
+            <button class="tool-btn active" id="tool-terrain" onclick="setTool('terrain')">&#9670; Terrain</button>
+            <button class="tool-btn" id="tool-marker"  onclick="setTool('marker')">&#128205; Marker</button>
+            <button class="tool-btn" id="tool-fog"     onclick="setTool('fog')">&#9729; Fog</button>
+            <button class="tool-btn" id="tool-party"   onclick="setTool('party')">&#9650; Party pos.</button>
+            <div class="tool-sep"></div>
+            <div class="terrain-swatches" id="terrain-swatches">
+              <div class="t-swatch active" style="background:#9FE1CB;" data-terrain="desert"  title="Desert"  onclick="setTerrain(this)"></div>
+              <div class="t-swatch" style="background:#B5D4F4;" data-terrain="water"   title="Water"   onclick="setTerrain(this)"></div>
+              <div class="t-swatch" style="background:#C0DD97;" data-terrain="scrub"   title="Scrub"   onclick="setTerrain(this)"></div>
+              <div class="t-swatch" style="background:#FAC775;" data-terrain="rock"    title="Rock"    onclick="setTerrain(this)"></div>
+              <div class="t-swatch" style="background:#D3D1C7;" data-terrain="road"    title="Road"    onclick="setTerrain(this)"></div>
+              <div class="t-swatch" style="background:#2C2C2A;" data-terrain="hidden"  title="Hidden"  onclick="setTerrain(this)"></div>
+            </div>
+            <div class="tool-sep"></div>
+            <span style="font-size:0.75em;color:var(--text2);">Hex size:</span>
+            <input type="number" class="num-input" id="hex-size" value="40" min="20" max="80" style="width:52px;" oninput="setHexSize(this.value)">
+            <button class="btn green" onclick="syncMapToPlayers()">&#9654; Sync to players</button>
+          </div>
+          <div class="map-canvas-wrap">
+            <canvas id="overworld-canvas"></canvas>
+            <div class="map-placeholder" id="ow-placeholder">
+              <div class="map-placeholder-icon">&#11043;</div>
+              <div style="font-size:0.85em;">Hex overworld map — click to paint terrain</div>
+              <div style="font-size:0.75em;">GM sees all · players see only revealed hexes</div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /overworld -->
+
+      <!-- ── BATTLE MAP TAB ── -->
+      <div class="tab-page" id="tab-battle">
+        <div class="battle-layout">
+          <div class="battle-toolbar">
+            <button class="tool-btn active" id="btool-select" onclick="setBTool('select')">&#9654; Select</button>
+            <button class="tool-btn" id="btool-token"  onclick="setBTool('token')">&#9711; Token</button>
+            <button class="tool-btn" id="btool-fog"    onclick="setBTool('fog')">&#9729; Fog</button>
+            <button class="tool-btn" id="btool-draw"   onclick="setBTool('draw')">&#9998; Draw</button>
+            <button class="tool-btn" id="btool-meas"   onclick="setBTool('measure')">&#8596; Measure</button>
+            <div class="tool-sep"></div>
+            <div class="grid-settings">
+              <span>Grid size:</span>
+              <input type="number" class="num-input" id="grid-size" value="50" min="20" max="120" style="width:52px;" oninput="setBGridSize(this.value)">
+              <span>px / 5ft</span>
+            </div>
+            <button class="btn green" onclick="syncBattleToPlayers()" style="margin-left:6px;">&#9654; Sync</button>
+            <button class="btn" onclick="clearBattle()">Clear</button>
+          </div>
+          <div class="battle-canvas-wrap">
+            <canvas id="battle-canvas"></canvas>
+            <div class="map-placeholder" id="battle-placeholder">
+              <div class="map-placeholder-icon">&#9633;</div>
+              <div style="font-size:0.85em;">Square grid battle map</div>
+              <div style="font-size:0.75em;">Place tokens, draw terrain, control fog of war</div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /battle -->
+
+      <!-- ── PARTY TAB ── -->
+      <div class="tab-page" id="tab-party">
+        <div class="party-layout">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <h2 style="font-size:0.88em;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.08em;">Party overview</h2>
+            <button class="btn amber" onclick="addPartyMember()">+ Add member</button>
+          </div>
+          <div class="party-grid" id="party-grid"></div>
+        </div>
+      </div><!-- /party -->
+
+    </div><!-- /main-content -->
+
+    <!-- DIVIDER -->
+    <div class="divider" id="rp-divider">
+      <div class="divider-dots">
+        <div class="divider-dot"></div><div class="divider-dot"></div>
+        <div class="divider-dot"></div><div class="divider-dot"></div>
       </div>
     </div>
-  </header>
 
-  <main>
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <h2>Library</h2>
-        <button class="upload-btn" onclick="openUploadModal()">+ Upload</button>
-      </div>
-      <div class="category-tabs">
-        <button class="category-tab bgm active" onclick="setCategory('bgm')">BGM</button>
-        <button class="category-tab ambience" onclick="setCategory('ambience')">AMB</button>
-        <button class="category-tab sfx" onclick="setCategory('sfx')">SFX</button>
-      </div>
-      <input type="text" class="search-box" placeholder="Search tracks..." id="search-input">
-      <div class="track-list" id="track-list"></div>
-    </aside>
+    <!-- RIGHT PANEL — contextual per tab -->
+    <div class="right-panel" id="right-panel">
+      <div class="rp-tabs" id="rp-tabs"></div>
+      <div class="rp-body" id="rp-body"></div>
+    </div>
 
-    <!-- Upload Modal -->
-    <div class="modal-overlay" id="upload-modal">
-      <div class="modal">
-        <h3>Upload Audio Files</h3>
-        <div class="upload-options">
-          <div class="upload-option bgm" onclick="triggerUpload('bgm')">
-            <div class="upload-option-icon">🎵</div>
-            <div class="upload-option-info">
-              <div class="upload-option-title">Background Music</div>
-              <div class="upload-option-limit">Max 500MB per file</div>
-            </div>
-          </div>
-          <div class="upload-option ambience" onclick="triggerUpload('ambience')">
-            <div class="upload-option-icon">🌲</div>
-            <div class="upload-option-info">
-              <div class="upload-option-title">Ambience</div>
-              <div class="upload-option-limit">Max 500MB per file</div>
-            </div>
-          </div>
-          <div class="upload-option sfx" onclick="triggerUpload('sfx')">
-            <div class="upload-option-icon">🔔</div>
-            <div class="upload-option-info">
-              <div class="upload-option-title">Sound Effects</div>
-              <div class="upload-option-limit">Max 10MB per file</div>
-            </div>
-          </div>
-        </div>
-        <button class="modal-close" onclick="closeUploadModal()">Cancel</button>
+  </div><!-- /shell -->
+</div><!-- /app -->
+
+<!-- Upload modal -->
+<div class="modal-wrap" id="upload-modal">
+  <div class="modal">
+    <h3>Upload audio</h3>
+    <div class="modal-opts">
+      <div class="modal-opt" onclick="triggerUpload('bgm')">
+        <div class="modal-opt-icon bgm">&#127925;</div>
+        <div class="modal-opt-info"><div class="modal-opt-title">Background Music</div><div class="modal-opt-sub">Max 500 MB per file</div></div>
+      </div>
+      <div class="modal-opt" onclick="triggerUpload('ambience')">
+        <div class="modal-opt-icon amb">&#127795;</div>
+        <div class="modal-opt-info"><div class="modal-opt-title">Ambience</div><div class="modal-opt-sub">Max 500 MB per file</div></div>
+      </div>
+      <div class="modal-opt" onclick="triggerUpload('sfx')">
+        <div class="modal-opt-icon sfx">&#128276;</div>
+        <div class="modal-opt-info"><div class="modal-opt-title">Sound Effects</div><div class="modal-opt-sub">Max 10 MB per file</div></div>
       </div>
     </div>
-    <input type="file" id="file-upload" multiple accept=".mp3,.wav,.ogg,.m4a,.flac,.webm" style="display:none">
+    <button class="btn full modal-cancel" onclick="closeUpload()">Cancel</button>
+  </div>
+</div>
+<input type="file" id="file-upload" multiple accept=".mp3,.wav,.ogg,.m4a,.flac,.webm" style="display:none;">
 
-    <section class="control-area">
-      <div class="panels">
-        <!-- BGM Panel -->
-        <div class="panel bgm">
-          <div class="panel-header">
-            <h3>Background Music</h3>
-            <span class="panel-badge">Looping</span>
-          </div>
-          <div class="drop-zone" id="bgm-drop" data-channel="bgm">
-            <span class="icon">🎵</span>
-            <span>Drop track here or click from library</span>
-          </div>
-          <div class="transport" id="bgm-transport" style="display: none;">
-            <button class="transport-btn" onclick="seekBackward('bgm')">⏪</button>
-            <button class="transport-btn play" id="bgm-play-btn" onclick="togglePlay('bgm')">▶</button>
-            <button class="transport-btn" onclick="seekForward('bgm')">⏩</button>
-            <button class="transport-btn" onclick="stopChannel('bgm')">⏹</button>
-          </div>
-          <div class="progress-container" id="bgm-progress-container" style="display: none;">
-            <div class="progress-bar" onclick="seekTo(event, 'bgm')">
-              <div class="progress-fill" id="bgm-progress"></div>
-            </div>
-            <div class="time-display">
-              <span id="bgm-current">0:00</span>
-              <span id="bgm-duration">0:00</span>
-            </div>
-          </div>
-          <div class="volume-control">
-            <span class="volume-icon">🔊</span>
-            <input type="range" class="volume-slider" id="bgm-volume" min="0" max="100" value="50" oninput="setVolume('bgm', this.value)">
-            <span class="volume-value" id="bgm-volume-val">50%</span>
-          </div>
-          <div class="toggle-row">
-            <span class="toggle-label">Loop</span>
-            <div class="toggle active" id="bgm-loop" onclick="toggleLoop('bgm')"></div>
-          </div>
-          <div class="fade-controls">
-            <button class="fade-btn" onclick="fadeOut('bgm')">Fade Out</button>
-            <button class="fade-btn" onclick="fadeIn('bgm')">Fade In</button>
-          </div>
-        </div>
+<div class="toast-wrap" id="toast-wrap"></div>
 
-        <!-- Ambience Panel -->
-        <div class="panel ambience">
-          <div class="panel-header">
-            <h3>Ambience</h3>
-            <span class="panel-badge">Atmospheric</span>
-          </div>
-          <div class="drop-zone" id="ambience-drop" data-channel="ambience">
-            <span class="icon">🌲</span>
-            <span>Drop track here or click from library</span>
-          </div>
-          <div class="transport" id="ambience-transport" style="display: none;">
-            <button class="transport-btn" onclick="seekBackward('ambience')">⏪</button>
-            <button class="transport-btn play" id="ambience-play-btn" onclick="togglePlay('ambience')">▶</button>
-            <button class="transport-btn" onclick="seekForward('ambience')">⏩</button>
-            <button class="transport-btn" onclick="stopChannel('ambience')">⏹</button>
-          </div>
-          <div class="progress-container" id="ambience-progress-container" style="display: none;">
-            <div class="progress-bar" onclick="seekTo(event, 'ambience')">
-              <div class="progress-fill" id="ambience-progress"></div>
-            </div>
-            <div class="time-display">
-              <span id="ambience-current">0:00</span>
-              <span id="ambience-duration">0:00</span>
-            </div>
-          </div>
-          <div class="volume-control">
-            <span class="volume-icon">🔊</span>
-            <input type="range" class="volume-slider" id="ambience-volume" min="0" max="100" value="30" oninput="setVolume('ambience', this.value)">
-            <span class="volume-value" id="ambience-volume-val">30%</span>
-          </div>
-          <div class="toggle-row">
-            <span class="toggle-label">Loop</span>
-            <div class="toggle active" id="ambience-loop" onclick="toggleLoop('ambience')"></div>
-          </div>
-          <div class="fade-controls">
-            <button class="fade-btn" onclick="fadeOut('ambience')">Fade Out</button>
-            <button class="fade-btn" onclick="fadeIn('ambience')">Fade In</button>
-          </div>
-        </div>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+// ============================================================================
+// State
+// ============================================================================
+const socket = io();
+const audioEls = { bgm: new Audio(), ambience: new Audio() };
+let tracks = { bgm: [], ambience: [], sfx: [] };
+let libCat = 'bgm';
+let uploadCat = null;
+let currentTab = 'audio';
 
-        <!-- SFX Panel -->
-        <div class="panel sfx">
-          <div class="panel-header">
-            <h3>Sound Effects</h3>
-            <span class="panel-badge">One-Shot</span>
-          </div>
-          <div class="sfx-grid" id="sfx-grid">
-            <!-- SFX pads populated by JS -->
-          </div>
-        </div>
+// Dice state
+const gmDice = { pool: [], modifiers: { prof:0, item:0, status:0, circ:0 }, mode: 'secret', feed: [] };
 
-        <!-- Master Panel -->
-        <div class="panel master">
-          <div class="panel-header">
-            <h3>Master Controls</h3>
-            <span class="panel-badge">Global</span>
-          </div>
-          <div class="master-controls">
-            <button class="master-btn" onclick="fadeOutAll()">Fade All Out</button>
-            <button class="master-btn" onclick="fadeInAll()">Fade All In</button>
-            <button class="master-btn danger" onclick="stopAll()">Stop All</button>
-            <button class="master-btn" onclick="refreshTracks()">Refresh Library</button>
-          </div>
-        </div>
+// Party state — loaded from localStorage, editable
+let party = JSON.parse(localStorage.getItem('gm_party') || '[]');
+if (!party.length) party = [
+  { id:1, name:'Arl',     cls:'Monk 8',       hp:98,  maxHp:98,  ac:24, speed:35, conditions:[], color:'#EEEDFE', textColor:'#3C3489' },
+  { id:2, name:'Johanna', cls:'Chronicler 8',  hp:88,  maxHp:88,  ac:21, speed:30, conditions:[], color:'#E1F5EE', textColor:'#085041' },
+  { id:3, name:'Thrain',  cls:'Fighter 8',     hp:110, maxHp:110, ac:22, speed:25, conditions:[], color:'#FAEEDA', textColor:'#633806' },
+];
+
+// Overworld map state
+const owMap = { hexes: {}, hexSize: 40, tool: 'terrain', terrain: 'desert', partyPos: null, revealed: new Set(), locations: [] };
+const terrainColors = { desert:'#9FE1CB', water:'#B5D4F4', scrub:'#C0DD97', rock:'#FAC775', road:'#D3D1C7', hidden:'#2C2C2A' };
+
+// Battle map state
+const bMap = { gridSize: 50, tool: 'select', tokens: [], fogCells: new Set() };
+
+// Right panel config per tab
+const rpConfig = {
+  audio:     { tabs: ['Dice', 'Party', 'Notes'],    default: 'Dice' },
+  dice:      { tabs: ['Party', 'Notes'],             default: 'Party' },
+  overworld: { tabs: ['Map tools', 'Locations', 'Party'], default: 'Map tools' },
+  battle:    { tabs: ['Tokens', 'Initiative', 'Party'],   default: 'Tokens' },
+  party:     { tabs: ['Dice feed', 'Notes'],         default: 'Dice feed' },
+};
+
+// ============================================================================
+// Socket
+// ============================================================================
+socket.on('connect', () => {
+  socket.emit('register', 'dm');
+  document.getElementById('conn-dot').classList.remove('off');
+  document.getElementById('conn-text').textContent = 'Connected';
+  showToast('Connected');
+});
+socket.on('disconnect', () => {
+  document.getElementById('conn-dot').classList.add('off');
+  document.getElementById('conn-text').textContent = 'Disconnected';
+});
+socket.on('clients:update', (data) => {
+  const chips = document.getElementById('player-chips');
+  if (!data.playerList || !data.playerList.length) { chips.innerHTML = ''; return; }
+  chips.innerHTML = data.playerList.map(p =>
+    `<span class="p-chip${p.syncMode==='PAUSED'?' paused':''}">${p.syncMode==='PAUSED'?'&#9208; ':''}${p.name}</span>`
+  ).join('');
+  // Update party online status
+  data.playerList.forEach(p => {
+    party.forEach(pc => { if (pc.name === p.name) pc.online = true; });
+  });
+  renderParty();
+  renderRPParty();
+});
+socket.on('tracks:updated', loadTracks);
+socket.on('dice:result', (record) => {
+  gmDice.feed.unshift(record);
+  if (gmDice.feed.length > 100) gmDice.feed.pop();
+  renderGmFeed();
+  renderRPDiceFeed();
+});
+
+// ============================================================================
+// Tab switching
+// ============================================================================
+function switchTab(name) {
+  currentTab = name;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.tab-page').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
+  buildRightPanel(name);
+  if (name === 'overworld') initOverworld();
+  if (name === 'battle')    initBattle();
+  if (name === 'party')     renderParty();
+  if (name === 'dice')      initGmDiceTab();
+}
+
+// ============================================================================
+// Right Panel — build contextual tabs + content
+// ============================================================================
+function buildRightPanel(tab) {
+  const cfg = rpConfig[tab];
+  const tabsEl = document.getElementById('rp-tabs');
+  const bodyEl = document.getElementById('rp-body');
+
+  tabsEl.innerHTML = cfg.tabs.map((t,i) =>
+    `<div class="rp-tab${i===0?' active':''}" data-rpanel="${t}" onclick="switchRPanel('${t}')">${t}</div>`
+  ).join('');
+
+  bodyEl.innerHTML = cfg.tabs.map((t,i) =>
+    `<div class="rp-panel${i===0?' active':''}" id="rp-panel-${slugify(t)}"></div>`
+  ).join('');
+
+  cfg.tabs.forEach(t => fillRPanel(tab, t));
+}
+
+function switchRPanel(name) {
+  document.querySelectorAll('.rp-tab').forEach(t => t.classList.toggle('active', t.dataset.rpanel === name));
+  document.querySelectorAll('.rp-panel').forEach(p => p.classList.toggle('active', p.id === 'rp-panel-' + slugify(name)));
+}
+
+function slugify(s) { return s.toLowerCase().replace(/[^a-z0-9]/g,'_'); }
+
+function fillRPanel(tab, panelName) {
+  const el = document.getElementById('rp-panel-' + slugify(panelName));
+  if (!el) return;
+  const n = panelName.toLowerCase();
+
+  if (n === 'dice' || n === 'dice feed') {
+    el.innerHTML = `
+      <div class="sec-label">Session feed <span style="font-weight:400;color:var(--text3);">— GM sees all</span></div>
+      <div class="card rp-dice-feed" id="rp-feed-list"><div class="feed-empty">No rolls yet</div></div>`;
+    renderRPDiceFeed();
+
+  } else if (n === 'party') {
+    el.innerHTML = `
+      <div class="sec-label">HP tracker</div>
+      <div class="card" id="rp-party-list">${renderRPPartyHTML()}</div>`;
+
+  } else if (n === 'notes') {
+    el.innerHTML = `
+      <div class="sec-label">Session notes</div>
+      <textarea id="gm-notes" placeholder="Notes, reminders, secret info...">${localStorage.getItem('gm_notes')||''}</textarea>
+      <div style="margin-top:6px;">
+        <button class="btn full" onclick="saveNotes()">Save notes</button>
+      </div>`;
+
+  } else if (n === 'map tools') {
+    el.innerHTML = `
+      <div class="sec-label">Selected hex</div>
+      <div class="card" id="rp-hex-info">
+        <div class="c-row" style="color:var(--text3);font-size:0.78em;">Click a hex to inspect it</div>
       </div>
-    </section>
-  </main>
+      <div class="sec-label">Reveal controls</div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;">
+        <button class="btn green" style="flex:1;" onclick="revealAll()">Reveal all</button>
+        <button class="btn" style="flex:1;" onclick="hideAll()">Hide all</button>
+      </div>
+      <div class="sec-label">Map import</div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn full" onclick="exportMap()">Export JSON</button>
+      </div>`;
 
-  <div class="toast-container" id="toast-container"></div>
+  } else if (n === 'locations') {
+    el.innerHTML = `
+      <div class="sec-label">Named locations</div>
+      <div class="card" id="rp-locations">${renderLocationsHTML()}</div>
+      <button class="btn full" style="margin-top:6px;" onclick="addLocation()">+ Add location</button>`;
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
-    
-    // Audio elements
-    const audioElements = {
-      bgm: new Audio(),
-      ambience: new Audio()
-    };
-    
-    // Track data - now organized by category
-    let tracks = { bgm: [], ambience: [], sfx: [] };
-    let currentCategory = 'bgm';
-    let uploadCategory = null;
-    
-    // Initialize
-    socket.on('connect', () => {
-      socket.emit('register', 'dm');
-      showToast('Connected to server');
-    });
+  } else if (n === 'tokens') {
+    el.innerHTML = `
+      <div class="sec-label">Tokens on map</div>
+      <div class="card"><div class="c-row" style="color:var(--text3);font-size:0.78em;">No tokens placed yet</div></div>
+      <div class="sec-label">Add token</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <input class="txt-input" id="token-name" placeholder="Name / NPC" style="width:100%;">
+        <div style="display:flex;gap:6px;">
+          <select class="txt-input" id="token-color" style="flex:1;">
+            <option value="#E24B4A">Red</option>
+            <option value="#1D9E75">Green</option>
+            <option value="#378ADD">Blue</option>
+            <option value="#EF9F27">Amber</option>
+            <option value="#E8E6F0">White</option>
+          </select>
+          <button class="btn amber" onclick="placeToken()">Place</button>
+        </div>
+      </div>`;
 
-    socket.on('clients:update', (data) => {
-      const status = document.getElementById('player-status');
-      const count = document.getElementById('player-count');
-      status.className = 'status-dot' + (data.players > 0 ? ' connected' : '');
+  } else if (n === 'initiative') {
+    el.innerHTML = `
+      <div class="sec-label">Initiative order</div>
+      <div class="card" id="rp-initiative">
+        <div class="c-row" style="color:var(--text3);font-size:0.78em;">No initiative set</div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:6px;">
+        <button class="btn full" onclick="rollInitiative()">Roll initiative</button>
+      </div>`;
+  }
+}
 
-      if (!data.playerList || data.playerList.length === 0) {
-        count.innerHTML = '0 Players';
-        return;
-      }
+function renderRPPartyHTML() {
+  if (!party.length) return '<div class="c-row" style="color:var(--text3);">No party members</div>';
+  return party.map(pc => `
+    <div class="rp-pc-row">
+      <div class="rp-avatar" style="background:${pc.color};color:${pc.textColor};">${pc.name[0]}</div>
+      <span class="rp-pc-name">${pc.name}</span>
+      <input class="num-input rp-hp-input" type="number" value="${pc.hp}" min="0" max="${pc.maxHp}"
+             onchange="updateHp(${pc.id},this.value)" style="width:40px;">
+      <span class="rp-hp-max">/${pc.maxHp}</span>
+    </div>`).join('');
+}
+function renderRPParty() {
+  const el = document.getElementById('rp-party-list');
+  if (el) el.innerHTML = renderRPPartyHTML();
+}
 
-      const nameChips = data.playerList.map(p => {
-        const paused = p.syncMode === 'PAUSED';
-        return `<span style="
-          display:inline-flex;align-items:center;gap:4px;
-          background:${paused ? 'rgba(255,152,0,0.15)' : 'rgba(122,162,247,0.12)'};
-          border:1px solid ${paused ? 'rgba(255,152,0,0.5)' : 'rgba(122,162,247,0.3)'};
-          border-radius:12px;padding:2px 10px;margin:2px 3px;
-          color:${paused ? '#ff9800' : 'var(--text)'};font-size:0.85em;
-        ">${paused ? '⏸ ' : ''}${p.name}</span>`
-      }).join('');
-
-      const label = `${data.players} Player${data.players !== 1 ? 's' : ''}`;
-      count.innerHTML = `<span style="margin-right:6px">${label}</span>${nameChips}`;
-    });
-
-    socket.on('tracks:updated', () => loadTracks());
-
-    // Load tracks
-    async function loadTracks() {
-      try {
-        const res = await fetch('/api/tracks');
-        tracks = await res.json();
-        renderTracks();
-        renderSfxPads();
-      } catch (err) {
-        showToast('Failed to load tracks');
-      }
-    }
-
-    function setCategory(category) {
-      currentCategory = category;
-      document.querySelectorAll('.category-tab').forEach(tab => {
-        tab.classList.toggle('active', tab.classList.contains(category));
-      });
-      renderTracks();
-    }
-
-    function renderTracks() {
-      const list = document.getElementById('track-list');
-      const search = document.getElementById('search-input').value.toLowerCase();
-      const categoryTracks = tracks[currentCategory] || [];
-      const filtered = categoryTracks.filter(t => t.name.toLowerCase().includes(search));
-      
-      list.innerHTML = filtered.map(t => `
-        <div class="track-item" draggable="true" data-url="${t.url}" data-name="${t.name}" data-category="${t.category}">
-          <span class="track-name">${t.name}</span>
-          <div class="track-actions">
-            <button class="track-btn bgm" onclick="loadToChannel('bgm', '${t.url}', '${t.name}')" title="BGM">B</button>
-            <button class="track-btn amb" onclick="loadToChannel('ambience', '${t.url}', '${t.name}')" title="Ambience">A</button>
-            <button class="track-btn sfx" onclick="playSfx('${t.url}', '${t.name}')" title="SFX">S</button>
-            <button class="track-btn del" onclick="deleteTrack('${t.category}', '${t.filename}')" title="Delete">×</button>
+function renderRPDiceFeed() {
+  ['rp-feed-list','gm-feed-list'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (!gmDice.feed.length) { el.innerHTML = '<div class="feed-empty">No rolls yet</div>'; return; }
+    el.innerHTML = gmDice.feed.slice(0,40).map(r => {
+      const nat = r.isNat20 ? `<span class="nat-pill nat20" style="font-size:0.65em;">nat 20</span>`
+                : r.isNat1  ? `<span class="nat-pill nat1"  style="font-size:0.65em;">nat 1</span>` : '';
+      const dos = r.degreeOfSuccess ? `<span class="dos-pill ${dosClass(r.degreeOfSuccess)}">${r.degreeOfSuccess}</span>` : '';
+      const formula = r.diceResults
+        ? r.diceResults.map(d=>d.value).join('+') + (r.modTotal!==0?(r.modTotal>0?'+':'')+r.modTotal:'')
+        : '';
+      const revealBtn = r.visibility==='private' && !r.redacted
+        ? `<button class="reveal-btn" onclick="revealRoll('${r.id}')">Reveal</button>` : '';
+      if (r.redacted) return `
+        <div class="feed-entry redacted">
+          <div class="feed-row1"><span class="feed-name">${esc(r.roller)}</span><span class="feed-lbl">rolled privately</span><span class="badge gm" style="font-size:0.65em;">GM</span></div>
+          <div style="font-size:0.75em;color:var(--text3);">Result hidden from others</div>
+        </div>`;
+      return `
+        <div class="feed-entry">
+          <div class="feed-row1">
+            <span class="feed-name">${esc(r.roller)}</span>
+            <span class="feed-lbl">${esc(r.label||poolStr(r.pool))}</span>
+            <span class="badge ${r.visibility==='private'?'priv':'pub'}">${r.visibility}</span>
+            ${revealBtn}
           </div>
-        </div>
-      `).join('');
+          <div class="feed-row2">
+            <span class="feed-total ${r.isNat20?'nat20':r.isNat1?'nat1':''}">${r.total}</span>
+            <span class="feed-formula">${formula}</span>
+            ${nat}${dos}
+          </div>
+        </div>`;
+    }).join('');
+  });
+}
 
-      // Setup drag events
-      list.querySelectorAll('.track-item').forEach(item => {
-        item.addEventListener('dragstart', (e) => {
-          e.dataTransfer.setData('text/plain', JSON.stringify({
-            url: item.dataset.url,
-            name: item.dataset.name
-          }));
-          item.classList.add('dragging');
-        });
-        item.addEventListener('dragend', () => item.classList.remove('dragging'));
-      });
-    }
+function revealRoll(id) {
+  socket.emit('dice:reveal', { id });
+  showToast('Roll revealed to players');
+}
 
-    function renderSfxPads() {
-      const grid = document.getElementById('sfx-grid');
-      const sfxTracks = tracks.sfx || [];
-      const pads = sfxTracks.slice(0, 12).map(t => `
-        <div class="sfx-pad" onclick="playSfx('${t.url}', '${t.name}')">
-          <span class="icon">🔔</span>
-          <span class="name">${t.name}</span>
-        </div>
-      `);
-      
-      while (pads.length < 12) {
-        pads.push('<div class="sfx-pad sfx-empty">Empty</div>');
-      }
-      
-      grid.innerHTML = pads.join('');
-    }
+// ============================================================================
+// Audio library
+// ============================================================================
+async function loadTracks() {
+  try {
+    const res = await fetch('/api/tracks');
+    tracks = await res.json();
+    renderLibrary();
+    renderSfxPads();
+  } catch(e) { showToast('Failed to load tracks'); }
+}
 
-    // Drop zones
-    document.querySelectorAll('.drop-zone').forEach(zone => {
-      zone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        zone.classList.add('active');
-      });
-      
-      zone.addEventListener('dragleave', () => zone.classList.remove('active'));
-      
-      zone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        zone.classList.remove('active');
-        const data = JSON.parse(e.dataTransfer.getData('text/plain'));
-        loadToChannel(zone.dataset.channel, data.url, data.name);
-      });
+function setLibCat(cat) {
+  libCat = cat;
+  document.querySelectorAll('.lib-cat-tab').forEach(t => {
+    t.classList.toggle('active', t.classList.contains(cat));
+  });
+  renderLibrary();
+}
+
+function renderLibrary() {
+  const q = document.getElementById('lib-search').value.toLowerCase();
+  const key = libCat === 'amb' ? 'ambience' : libCat;
+  const list = (tracks[key] || []).filter(t => t.name.toLowerCase().includes(q));
+  document.getElementById('lib-list').innerHTML = list.map(t => `
+    <div class="lib-track" draggable="true"
+         data-url="${t.url}" data-name="${t.name}"
+         onclick="quickLoad('${libCat==='amb'?'ambience':'bgm'}','${t.url}','${t.name}')">
+      <div class="lib-track-dot ${libCat}"></div>
+      <span class="lib-track-name">${t.name}</span>
+      <div class="lib-track-acts">
+        <button class="lib-act-btn b" onclick="event.stopPropagation();loadCh('bgm','${t.url}','${t.name}')" title="BGM">B</button>
+        <button class="lib-act-btn a" onclick="event.stopPropagation();loadCh('ambience','${t.url}','${t.name}')" title="Amb">A</button>
+        <button class="lib-act-btn s" onclick="event.stopPropagation();playSfx('${t.url}','${t.name}')" title="SFX">S</button>
+        <button class="lib-act-btn x" onclick="event.stopPropagation();delTrack('${t.category}','${t.filename}')" title="Delete">&#215;</button>
+      </div>
+    </div>`).join('') || '<div style="padding:14px;font-size:0.8em;color:var(--text3);text-align:center;">No tracks found</div>';
+
+  // drag-to-drop-zone
+  document.querySelectorAll('.lib-track').forEach(el => {
+    el.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('text/plain', JSON.stringify({ url: el.dataset.url, name: el.dataset.name }));
     });
+  });
+}
 
-    // Channel controls
-    function loadToChannel(channel, url, name) {
-      const audio = audioElements[channel];
-      const drop = document.getElementById(`${channel}-drop`);
-      const transport = document.getElementById(`${channel}-transport`);
-      const progress = document.getElementById(`${channel}-progress-container`);
-      
-      audio.src = url;
-      audio.loop = document.getElementById(`${channel}-loop`).classList.contains('active');
-      audio.volume = parseInt(document.getElementById(`${channel}-volume`).value) / 100;
-      
-      drop.innerHTML = `<span class="track-info">${name}</span>`;
-      drop.classList.add('has-track');
-      transport.style.display = 'flex';
-      progress.style.display = 'block';
-      
-      audio.play();
-      updatePlayButton(channel, true);
-      
-      // Progress updates
-      audio.ontimeupdate = () => updateProgress(channel);
+function renderSfxPads() {
+  const sfx = tracks.sfx || [];
+  const pads = sfx.slice(0,12).map(t =>
+    `<div class="sfx-pad" onclick="playSfx('${t.url}','${t.name}')">${t.name}</div>`
+  );
+  while (pads.length < 12) pads.push('<div class="sfx-pad empty">Empty</div>');
+  document.getElementById('sfx-pads').innerHTML = pads.join('');
+}
 
-      // Defer emit until metadata is loaded so duration is available
-      audio.onloadedmetadata = () => {
-        document.getElementById(`${channel}-duration`).textContent = formatTime(audio.duration);
-        socket.emit(`${channel}:play`, {
-          track: url,
-          name,
-          volume: audio.volume,
-          duration: audio.duration,
-          currentTime: audio.currentTime,
-          loop: audio.loop
-        });
-      };
-    }
+// Drop zones
+document.querySelectorAll('[data-channel]').forEach(zone => {
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('drag-over');
+    const d = JSON.parse(e.dataTransfer.getData('text/plain'));
+    loadCh(zone.dataset.channel, d.url, d.name);
+  });
+});
 
-    function togglePlay(channel) {
-      const audio = audioElements[channel];
-      if (audio.paused) {
-        audio.play();
-        socket.emit(`${channel}:play`, {
-          track: audio.src,
-          currentTime: audio.currentTime,
-          duration: audio.duration,
-          loop: audio.loop
-        });
-        updatePlayButton(channel, true);
-      } else {
-        audio.pause();
-        socket.emit(`${channel}:pause`);
-        updatePlayButton(channel, false);
-      }
-    }
+function quickLoad(ch, url, name) { loadCh(ch, url, name); }
 
-    function stopChannel(channel) {
-      const audio = audioElements[channel];
-      audio.pause();
-      audio.currentTime = 0;
-      socket.emit(`${channel}:stop`);
-      
-      const drop = document.getElementById(`${channel}-drop`);
-      drop.innerHTML = `<span class="icon">${channel === 'bgm' ? '🎵' : '🌲'}</span><span>Drop track here or click from library</span>`;
-      drop.classList.remove('has-track');
-      document.getElementById(`${channel}-transport`).style.display = 'none';
-      document.getElementById(`${channel}-progress-container`).style.display = 'none';
-      updatePlayButton(channel, false);
-    }
+function loadCh(ch, url, name) {
+  const audio = audioEls[ch];
+  const drop  = document.getElementById(ch==='bgm'?'bgm-drop':'ambience-drop');
+  const transport = document.getElementById(ch+'-transport');
+  const progWrap  = document.getElementById(ch==='bgm'?'bgm-prog-wrap':null);
+  const loopBtn   = document.getElementById(ch+'-loop-btn');
 
-    function updatePlayButton(channel, playing) {
-      const btn = document.getElementById(`${channel}-play-btn`);
-      btn.textContent = playing ? '⏸' : '▶';
-      btn.classList.toggle('playing', playing);
-    }
+  audio.src  = url;
+  audio.loop = loopBtn ? loopBtn.classList.contains('active') : true;
+  audio.volume = parseInt(document.getElementById(ch==='bgm'?'bgm-vol':'ambience-vol').value) / 100;
 
-    function setVolume(channel, value) {
-      audioElements[channel].volume = value / 100;
-      document.getElementById(`${channel}-volume-val`).textContent = `${value}%`;
-      socket.emit(`${channel}:volume`, value / 100);
-    }
+  drop.textContent = name;
+  drop.classList.add('has-track');
+  transport.classList.add('visible');
+  if (progWrap) progWrap.style.display = 'block';
 
-    function toggleLoop(channel) {
-      const toggle = document.getElementById(`${channel}-loop`);
-      toggle.classList.toggle('active');
-      const loop = toggle.classList.contains('active');
-      audioElements[channel].loop = loop;
-      socket.emit(`${channel}:loop`, loop);
-    }
+  audio.play();
+  setPlayBtn(ch, true);
 
-    function seekTo(e, channel) {
-      const bar = e.currentTarget;
-      const rect = bar.getBoundingClientRect();
-      const pct = (e.clientX - rect.left) / rect.width;
-      const time = pct * audioElements[channel].duration;
-      audioElements[channel].currentTime = time;
-      socket.emit(`${channel}:seek`, time);
-    }
-
-    function seekForward(channel) {
-      audioElements[channel].currentTime += 10;
-      socket.emit(`${channel}:seek`, audioElements[channel].currentTime);
-    }
-
-    function seekBackward(channel) {
-      audioElements[channel].currentTime -= 10;
-      socket.emit(`${channel}:seek`, audioElements[channel].currentTime);
-    }
-
-    function updateProgress(channel) {
-      const audio = audioElements[channel];
-      const pct = (audio.currentTime / audio.duration) * 100 || 0;
-      document.getElementById(`${channel}-progress`).style.width = `${pct}%`;
-      document.getElementById(`${channel}-current`).textContent = formatTime(audio.currentTime);
-    }
-
-    function formatTime(sec) {
-      const m = Math.floor(sec / 60);
-      const s = Math.floor(sec % 60);
-      return `${m}:${s.toString().padStart(2, '0')}`;
-    }
-
-    // Fade controls
-    function fadeOut(channel, duration = 2000) {
-      const audio = audioElements[channel];
-      const startVol = audio.volume;
-      const step = startVol / (duration / 50);
-      
-      const fade = setInterval(() => {
-        if (audio.volume > step) {
-          audio.volume -= step;
-        } else {
-          audio.volume = 0;
-          clearInterval(fade);
-          audio.pause();
-          updatePlayButton(channel, false);
-        }
-      }, 50);
-      
-      socket.emit('fade:out', { channel, duration });
-    }
-
-    function fadeIn(channel, duration = 2000) {
-      const audio = audioElements[channel];
-      const targetVol = parseInt(document.getElementById(`${channel}-volume`).value) / 100;
-      audio.volume = 0;
-      audio.play();
-      
-      const step = targetVol / (duration / 50);
-      const fade = setInterval(() => {
-        if (audio.volume < targetVol - step) {
-          audio.volume += step;
-        } else {
-          audio.volume = targetVol;
-          clearInterval(fade);
-        }
-      }, 50);
-      
-      socket.emit('fade:in', { channel, duration, targetVol });
-      updatePlayButton(channel, true);
-    }
-
-    function fadeOutAll() {
-      fadeOut('bgm');
-      fadeOut('ambience');
-    }
-
-    function fadeInAll() {
-      fadeIn('bgm');
-      fadeIn('ambience');
-    }
-
-    function stopAll() {
-      stopChannel('bgm');
-      stopChannel('ambience');
-      socket.emit('master:stop');
-    }
-
-    // SFX
-    function playSfx(url, name) {
-      const sfx = new Audio(url);
-      sfx.play();
-      socket.emit('sfx:play', { url, name });
-      
-      // Visual feedback
-      const pads = document.querySelectorAll('.sfx-pad');
-      pads.forEach(pad => {
-        if (pad.querySelector('.name')?.textContent === name) {
-          pad.classList.add('playing');
-          setTimeout(() => pad.classList.remove('playing'), 500);
-        }
-      });
-    }
-
-    // Upload Modal
-    function openUploadModal() {
-      document.getElementById('upload-modal').classList.add('active');
-    }
-
-    function closeUploadModal() {
-      document.getElementById('upload-modal').classList.remove('active');
-    }
-
-    function triggerUpload(category) {
-      uploadCategory = category;
-      closeUploadModal();
-      document.getElementById('file-upload').click();
-    }
-
-    // File upload
-    document.getElementById('file-upload').addEventListener('change', async (e) => {
-      const files = e.target.files;
-      if (!files.length || !uploadCategory) return;
-      
-      const formData = new FormData();
-      for (const file of files) {
-        formData.append('files', file);
-      }
-      
-      try {
-        const res = await fetch(`/api/upload/${uploadCategory}`, { method: 'POST', body: formData });
-        const data = await res.json();
-        if (data.error) {
-          showToast(data.error);
-        } else if (data.success) {
-          showToast(`Uploaded ${data.files.length} file(s) to ${uploadCategory.toUpperCase()}`);
-          loadTracks();
-          setCategory(uploadCategory);
-        }
-      } catch (err) {
-        showToast('Upload failed');
-      }
-      
-      e.target.value = '';
-      uploadCategory = null;
+  audio.ontimeupdate = () => updateProg(ch);
+  audio.onloadedmetadata = () => {
+    if (ch === 'bgm') document.getElementById('bgm-dur').textContent = fmtTime(audio.duration);
+    socket.emit(`${ch}:play`, {
+      track: { url, name }, volume: audio.volume,
+      duration: audio.duration, currentTime: audio.currentTime, loop: audio.loop
     });
+  };
+  document.getElementById(ch==='bgm'?'bgm-status-dot':'amb-status-dot').classList.add('playing');
+  const badge = document.getElementById(ch==='bgm'?'bgm-badge':'amb-badge');
+  if (badge) badge.style.display = '';
+}
 
-    async function deleteTrack(category, filename) {
-      if (!confirm('Delete this track?')) return;
-      try {
-        await fetch(`/api/tracks/${category}/${encodeURIComponent(filename)}`, { method: 'DELETE' });
-        loadTracks();
-        showToast('Track deleted');
-      } catch (err) {
-        showToast('Delete failed');
-      }
+function togglePlay(ch) {
+  const a = audioEls[ch];
+  if (a.paused) {
+    a.play();
+    socket.emit(`${ch}:play`, { track: a.src, currentTime: a.currentTime, duration: a.duration, loop: a.loop });
+    setPlayBtn(ch, true);
+  } else {
+    a.pause();
+    socket.emit(`${ch}:pause`);
+    setPlayBtn(ch, false);
+  }
+}
+
+function setPlayBtn(ch, playing) {
+  const btn = document.getElementById(`${ch}-play-btn`);
+  if (!btn) return;
+  btn.innerHTML = playing ? '&#9646;&#9646;' : '&#9654;';
+}
+
+function stopCh(ch) {
+  const a = audioEls[ch];
+  a.pause(); a.currentTime = 0;
+  socket.emit(`${ch}:stop`);
+  const drop = document.getElementById(ch==='bgm'?'bgm-drop':'ambience-drop');
+  drop.textContent = ch==='bgm' ? 'Drop BGM track here or click from library' : 'Drop ambience track here or click from library';
+  drop.classList.remove('has-track');
+  document.getElementById(ch+'-transport').classList.remove('visible');
+  if (ch==='bgm') document.getElementById('bgm-prog-wrap').style.display = 'none';
+  setPlayBtn(ch, false);
+  document.getElementById(ch==='bgm'?'bgm-status-dot':'amb-status-dot').classList.remove('playing');
+  const badge = document.getElementById(ch==='bgm'?'bgm-badge':'amb-badge');
+  if (badge) badge.style.display = 'none';
+}
+
+function setVol(ch, v) {
+  audioEls[ch].volume = v / 100;
+  document.getElementById(ch==='bgm'?'bgm-vol-val':'ambience-vol-val').textContent = v + '%';
+  socket.emit(`${ch}:volume`, v / 100);
+}
+
+function toggleLoop(ch) {
+  const btn = document.getElementById(`${ch}-loop-btn`);
+  btn.classList.toggle('active');
+  audioEls[ch].loop = btn.classList.contains('active');
+  socket.emit(`${ch}:loop`, audioEls[ch].loop);
+}
+
+function seekClick(e, ch) {
+  const bar = e.currentTarget;
+  const pct = (e.clientX - bar.getBoundingClientRect().left) / bar.offsetWidth;
+  const t = pct * audioEls[ch].duration;
+  audioEls[ch].currentTime = t;
+  socket.emit(`${ch}:seek`, t);
+}
+function seekBack(ch) { audioEls[ch].currentTime -= 10; socket.emit(`${ch}:seek`, audioEls[ch].currentTime); }
+function seekFwd(ch)  { audioEls[ch].currentTime += 10; socket.emit(`${ch}:seek`, audioEls[ch].currentTime); }
+
+function updateProg(ch) {
+  const a = audioEls[ch];
+  if (ch !== 'bgm') return;
+  const pct = (a.currentTime / a.duration * 100) || 0;
+  document.getElementById('bgm-prog-fill').style.width = pct + '%';
+  document.getElementById('bgm-cur').textContent = fmtTime(a.currentTime);
+}
+
+function fadeOut(ch, ms=2000) {
+  const a = audioEls[ch];
+  const step = a.volume / (ms / 50);
+  const iv = setInterval(() => {
+    if (a.volume > step) { a.volume -= step; }
+    else { a.volume = 0; clearInterval(iv); a.pause(); setPlayBtn(ch, false); }
+  }, 50);
+  socket.emit('fade:out', { channel: ch, duration: ms });
+}
+function fadeIn(ch, ms=2000) {
+  const a = audioEls[ch];
+  const target = parseInt(document.getElementById(ch==='bgm'?'bgm-vol':'ambience-vol').value) / 100;
+  a.volume = 0; a.play(); setPlayBtn(ch, true);
+  const step = target / (ms / 50);
+  const iv = setInterval(() => { if (a.volume < target - step) a.volume += step; else { a.volume = target; clearInterval(iv); } }, 50);
+  socket.emit('fade:in', { channel: ch, duration: ms, targetVol: target });
+}
+function stopAll() { stopCh('bgm'); stopCh('ambience'); socket.emit('master:stop'); }
+
+function playSfx(url, name) {
+  new Audio(url).play();
+  socket.emit('sfx:play', { url, name, volume: 1 });
+  document.querySelectorAll('.sfx-pad').forEach(p => {
+    if (p.textContent === name) { p.classList.add('firing'); setTimeout(() => p.classList.remove('firing'), 400); }
+  });
+}
+
+// Upload
+function openUpload() { document.getElementById('upload-modal').classList.add('open'); }
+function closeUpload() { document.getElementById('upload-modal').classList.remove('open'); }
+function triggerUpload(cat) {
+  uploadCat = cat; closeUpload();
+  document.getElementById('file-upload').click();
+}
+document.getElementById('file-upload').addEventListener('change', async e => {
+  if (!e.target.files.length || !uploadCat) return;
+  const fd = new FormData();
+  for (const f of e.target.files) fd.append('files', f);
+  try {
+    const res = await fetch(`/api/upload/${uploadCat}`, { method: 'POST', body: fd });
+    const d = await res.json();
+    if (d.error) showToast(d.error);
+    else { showToast(`Uploaded ${d.files.length} file(s)`); loadTracks(); }
+  } catch { showToast('Upload failed'); }
+  e.target.value = ''; uploadCat = null;
+});
+
+async function delTrack(cat, fn) {
+  if (!confirm('Delete this track?')) return;
+  await fetch(`/api/tracks/${cat}/${encodeURIComponent(fn)}`, { method: 'DELETE' });
+  loadTracks(); showToast('Deleted');
+}
+
+function fmtTime(s) { const m=Math.floor(s/60),sec=Math.floor(s%60); return `${m}:${sec.toString().padStart(2,'0')}`; }
+
+// ============================================================================
+// GM Dice
+// ============================================================================
+let gmDiceBoxReady = false, gmDiceBox = null;
+
+async function initGmDiceTab() {
+  if (gmDiceBoxReady || gmDiceBox) return;
+  try {
+    const { default: DiceBox } = await import('/assets/dice-box/dice-box.es.min.js');
+    gmDiceBox = new DiceBox('#gm-dice-3d', { assetPath: '/assets/dice-box/', theme: 'default', offscreen: true, scale: 6 });
+    await gmDiceBox.init();
+    gmDiceBoxReady = true;
+  } catch(e) { console.warn('GM DiceBox init failed:', e); }
+
+  ['prof','item','status','circ'].forEach(t => {
+    document.getElementById(`gm-mod-${t}`)?.addEventListener('input', updateGmModTotal);
+  });
+  renderGmPool();
+  updateGmRollBtn();
+  updateGmModTotal();
+}
+
+function addDie(sides) {
+  const e = gmDice.pool.find(p => p.sides===sides);
+  if (e) e.count++; else gmDice.pool.push({ sides, count:1 });
+  renderGmPool();
+  updateGmRollBtn();
+}
+function setGmDieCount(sides, d) {
+  const e = gmDice.pool.find(p => p.sides===sides);
+  if (!e) return;
+  e.count = Math.max(0, e.count + d);
+  if (e.count === 0) gmDice.pool = gmDice.pool.filter(p => p.sides !== sides);
+  renderGmPool(); updateGmRollBtn();
+}
+function removeGmDie(sides) { gmDice.pool = gmDice.pool.filter(p => p.sides !== sides); renderGmPool(); updateGmRollBtn(); }
+
+function renderGmPool() {
+  const el = document.getElementById('gm-pool-list');
+  if (!el) return;
+  // Update die buttons
+  [4,6,8,10,12,20,100].forEach(s => {
+    const entry = gmDice.pool.find(p=>p.sides===s);
+    const btn = document.querySelector(`.die-btn[onclick="addDie(${s})"]`);
+    const sub = document.getElementById(`die-count-${s}`);
+    if (btn) btn.classList.toggle('has', !!entry);
+    if (sub) sub.textContent = entry ? `×${entry.count}` : '';
+  });
+  if (!gmDice.pool.length) { el.innerHTML = '<div class="pool-empty">Click a die to add it</div>'; return; }
+  el.innerHTML = gmDice.pool.map(({ sides, count }) => `
+    <div class="pool-row">
+      <span class="pool-lbl">${count}d${sides}</span>
+      <div style="display:flex;align-items:center;gap:5px;">
+        <button class="qty-btn" onclick="setGmDieCount(${sides},-1)">−</button>
+        <span class="qty-val">${count}</span>
+        <button class="qty-btn" onclick="setGmDieCount(${sides},1)">+</button>
+      </div>
+      <button class="remove-btn" onclick="removeGmDie(${sides})">&#215;</button>
+    </div>`).join('');
+}
+
+function updateGmModTotal() {
+  const vals = ['prof','item','status','circ'].map(t => Number(document.getElementById(`gm-mod-${t}`)?.value)||0);
+  const total = vals.reduce((s,v)=>s+v,0);
+  const el = document.getElementById('gm-mod-total');
+  if (el) { el.textContent = (total>=0?'+':'')+total; el.style.color = total>0?'var(--green)':total<0?'var(--red)':'var(--text2)'; }
+  gmDice.modifiers = { prof:vals[0], item:vals[1], status:vals[2], circ:vals[3] };
+}
+
+function setRollMode(mode) {
+  gmDice.mode = mode;
+  document.querySelectorAll('.roll-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode===mode));
+  const npcInput = document.getElementById('gm-npc-name');
+  if (npcInput) npcInput.style.display = mode==='npc' ? 'block' : 'none';
+}
+
+function updateGmRollBtn() {
+  const btn = document.getElementById('gm-roll-btn');
+  if (!btn) return;
+  if (!gmDice.pool.length) { btn.textContent = 'Select dice above'; btn.disabled = true; return; }
+  btn.disabled = false;
+  const pStr = gmDice.pool.map(p=>`${p.count}d${p.sides}`).join('+');
+  btn.textContent = `Roll ${pStr}`;
+}
+
+async function gmRoll() {
+  if (!gmDice.pool.length) return;
+  const label     = document.getElementById('gm-roll-label')?.value?.trim() || '';
+  const dc        = document.getElementById('gm-roll-dc')?.value ? Number(document.getElementById('gm-roll-dc').value) : null;
+  const npcName   = document.getElementById('gm-npc-name')?.value?.trim() || 'GM';
+  const isPublic  = gmDice.mode === 'npc';
+  const roller    = isPublic ? npcName : 'GM';
+
+  updateGmModTotal();
+
+  // Cosmetic 3D animation
+  if (gmDiceBoxReady && gmDiceBox) {
+    try {
+      await gmDiceBox.clearDice();
+      gmDiceBox.roll(gmDice.pool.map(p=>`${p.count}d${p.sides}`).join('+')).catch(()=>{});
+    } catch {}
+  }
+
+  socket.emit('dice:roll', {
+    pool: gmDice.pool,
+    modifiers: gmDice.modifiers,
+    label, dc,
+    visibility: isPublic ? 'public' : 'private',
+    roller,
+  });
+
+  document.getElementById('gm-dos-label').textContent = 'Rolling\u2026';
+  document.getElementById('gm-total').textContent = '\u2026';
+}
+
+function renderGmFeed() { renderRPDiceFeed(); }
+
+// Show own GM result in tray (server echoes it back)
+socket.on('dice:result', (r) => {
+  if (r.roller !== 'GM' && r.role !== 'dm') return;
+  if (r.redacted) return;
+  const dosEl  = document.getElementById('gm-dos-label');
+  const totEl  = document.getElementById('gm-total');
+  const frmEl  = document.getElementById('gm-formula');
+  const natEl  = document.getElementById('gm-nat-pill');
+  if (!dosEl) return;
+  dosEl.textContent = r.degreeOfSuccess || '';
+  dosEl.className   = 'gm-dos-label ' + (r.degreeOfSuccess ? dosClass(r.degreeOfSuccess) : '');
+  totEl.textContent = r.total;
+  totEl.className   = 'gm-total' + (r.isNat20?' nat20':r.isNat1?' nat1':'');
+  const fml = r.diceResults ? r.diceResults.map(d=>`d${d.sides}(${d.value})`).join('+') + (r.modTotal!==0?(r.modTotal>0?'+':'')+r.modTotal:'') : '';
+  frmEl.textContent = fml + (r.dc ? ` · DC ${r.dc}` : '');
+  if (r.isNat20)      { natEl.textContent='nat 20'; natEl.className='nat-pill nat20'; }
+  else if (r.isNat1)  { natEl.textContent='nat 1';  natEl.className='nat-pill nat1'; }
+  else                { natEl.textContent=''; natEl.className='nat-pill'; }
+});
+
+// ============================================================================
+// Overworld hex map
+// ============================================================================
+let owCanvas, owCtx, owInited = false;
+
+function initOverworld() {
+  if (owInited) return;
+  owInited = true;
+  owCanvas = document.getElementById('overworld-canvas');
+  owCtx = owCanvas.getContext('2d');
+  resizeOw();
+  window.addEventListener('resize', resizeOw);
+  owCanvas.addEventListener('click', owClick);
+  owCanvas.addEventListener('mousemove', owHover);
+  document.getElementById('ow-placeholder').style.display = 'none';
+  drawOw();
+}
+
+function resizeOw() {
+  const wrap = owCanvas.parentElement;
+  owCanvas.width  = wrap.clientWidth;
+  owCanvas.height = wrap.clientHeight;
+  drawOw();
+}
+
+function setHexSize(v) { owMap.hexSize = Math.max(20, Math.min(80, Number(v))); drawOw(); }
+function setTool(t) {
+  owMap.tool = t;
+  document.querySelectorAll('.tool-btn[id^="tool-"]').forEach(b => b.classList.toggle('active', b.id==='tool-'+t));
+}
+function setTerrain(el) {
+  owMap.terrain = el.dataset.terrain;
+  document.querySelectorAll('.t-swatch').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// Flat-top hex math
+function hexToPixel(col, row, size) {
+  const w = size * 2, h = Math.sqrt(3) * size;
+  const x = col * (w * 0.75) + size;
+  const y = row * h + (col % 2 === 0 ? 0 : h / 2) + size;
+  return { x, y };
+}
+function pixelToHex(px, py, size) {
+  const w = size * 2, h = Math.sqrt(3) * size;
+  const col = Math.round((px - size) / (w * 0.75));
+  const row = Math.round((py - (col % 2 === 0 ? 0 : h / 2) - size) / h);
+  return { col, row };
+}
+function drawHex(ctx, cx, cy, size, fill, stroke) {
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++) {
+    const a = Math.PI / 180 * (60 * i);
+    const x = cx + size * Math.cos(a), y = cy + size * Math.sin(a);
+    i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  }
+  ctx.closePath();
+  ctx.fillStyle = fill; ctx.fill();
+  ctx.strokeStyle = stroke; ctx.lineWidth = 0.5; ctx.stroke();
+}
+
+function drawOw() {
+  if (!owCtx) return;
+  const { width: W, height: H } = owCanvas;
+  const size = owMap.hexSize;
+  owCtx.clearRect(0, 0, W, H);
+  const w = size * 2, h = Math.sqrt(3) * size;
+  const cols = Math.ceil(W / (w * 0.75)) + 2;
+  const rows = Math.ceil(H / h) + 2;
+
+  for (let c = 0; c < cols; c++) {
+    for (let r = 0; r < rows; r++) {
+      const key = `${c},${r}`;
+      const terrain = owMap.hexes[key] || null;
+      const isRevealed = owMap.revealed.has(key);
+      const { x, y } = hexToPixel(c, r, size);
+      const fill = terrain ? (isRevealed ? terrainColors[terrain] : '#1a1a24') : '#16161f';
+      const stroke = terrain ? (isRevealed ? 'rgba(255,255,255,0.15)' : '#2a2a3a') : '#1e1e2a';
+      drawHex(owCtx, x, y, size - 1, fill, stroke);
     }
+  }
 
-    function refreshTracks() {
-      loadTracks();
-      showToast('Library refreshed');
+  // Party position
+  if (owMap.partyPos) {
+    const { x, y } = hexToPixel(owMap.partyPos.col, owMap.partyPos.row, size);
+    owCtx.beginPath();
+    owCtx.arc(x, y, size * 0.3, 0, Math.PI * 2);
+    owCtx.fillStyle = '#e24b4a';
+    owCtx.fill();
+  }
+
+  // Locations
+  owMap.locations.forEach(loc => {
+    const { x, y } = hexToPixel(loc.col, loc.row, size);
+    owCtx.beginPath();
+    owCtx.arc(x, y, size * 0.2, 0, Math.PI * 2);
+    owCtx.fillStyle = loc.color || '#534ab7';
+    owCtx.fill();
+    if (size > 30) {
+      owCtx.fillStyle = 'rgba(255,255,255,0.8)';
+      owCtx.font = `${Math.max(9, size * 0.22)}px sans-serif`;
+      owCtx.textAlign = 'center';
+      owCtx.fillText(loc.name, x, y + size * 0.55);
     }
+  });
+}
 
-    // Search
-    document.getElementById('search-input').addEventListener('input', renderTracks);
+let owHoverHex = null;
+function owHover(e) {
+  const rect = owCanvas.getBoundingClientRect();
+  const { col, row } = pixelToHex(e.clientX - rect.left, e.clientY - rect.top, owMap.hexSize);
+  owHoverHex = { col, row };
+}
 
-    // Toast
-    function showToast(message) {
-      const container = document.getElementById('toast-container');
-      const toast = document.createElement('div');
-      toast.className = 'toast';
-      toast.textContent = message;
-      container.appendChild(toast);
-      setTimeout(() => toast.remove(), 3000);
+function owClick(e) {
+  const rect = owCanvas.getBoundingClientRect();
+  const { col, row } = pixelToHex(e.clientX - rect.left, e.clientY - rect.top, owMap.hexSize);
+  const key = `${col},${row}`;
+
+  if (owMap.tool === 'terrain') {
+    owMap.hexes[key] = owMap.terrain;
+    owMap.revealed.add(key);
+    drawOw();
+    updateHexInfo(col, row, key);
+  } else if (owMap.tool === 'fog') {
+    if (owMap.revealed.has(key)) owMap.revealed.delete(key);
+    else owMap.revealed.add(key);
+    drawOw();
+  } else if (owMap.tool === 'party') {
+    owMap.partyPos = { col, row };
+    drawOw();
+    showToast(`Party moved to ${col}, ${row}`);
+  } else if (owMap.tool === 'marker') {
+    const name = prompt('Location name:');
+    if (name) {
+      owMap.locations.push({ col, row, name, color: '#534ab7', revealed: true });
+      drawOw();
+      updateLocations();
     }
+  }
+}
 
-    // Init
-    loadTracks();
-  </script>
+function updateHexInfo(col, row, key) {
+  const el = document.getElementById('rp-hex-info');
+  if (!el) return;
+  const terrain = owMap.hexes[key];
+  const revealed = owMap.revealed.has(key);
+  el.innerHTML = `
+    <div class="c-row"><span style="font-size:0.82em;font-weight:500;">Hex ${col}, ${row}</span></div>
+    <div class="c-row">
+      ${terrain ? `<div style="width:14px;height:14px;border-radius:3px;background:${terrainColors[terrain]};flex-shrink:0;"></div>` : ''}
+      <span style="font-size:0.78em;color:var(--text2);">${terrain || 'Empty'} · ${revealed?'revealed':'hidden'}</span>
+    </div>
+    <div class="c-row" style="gap:5px;">
+      <button class="btn green" style="flex:1;padding:4px;" onclick="revealHex('${key}')">Reveal</button>
+      <button class="btn" style="flex:1;padding:4px;" onclick="hideHex('${key}')">Hide</button>
+    </div>`;
+}
+function revealHex(key) { owMap.revealed.add(key); drawOw(); }
+function hideHex(key) { owMap.revealed.delete(key); drawOw(); }
+function revealAll() { Object.keys(owMap.hexes).forEach(k => owMap.revealed.add(k)); drawOw(); showToast('All hexes revealed'); }
+function hideAll()   { owMap.revealed.clear(); drawOw(); showToast('All hexes hidden'); }
+function syncMapToPlayers() { socket.emit('overworld:sync', { hexes: owMap.hexes, revealed: [...owMap.revealed], locations: owMap.locations, partyPos: owMap.partyPos }); showToast('Map synced to players'); }
+function exportMap() {
+  const d = JSON.stringify({ hexes: owMap.hexes, revealed:[...owMap.revealed], locations: owMap.locations });
+  const a = Object.assign(document.createElement('a'), { href: 'data:application/json;charset=utf-8,'+encodeURIComponent(d), download: 'eldoria-overworld.json' });
+  a.click(); showToast('Map exported');
+}
+
+function renderLocationsHTML() {
+  if (!owMap.locations.length) return '<div class="c-row" style="color:var(--text3);font-size:0.78em;">No locations yet</div>';
+  return owMap.locations.map((l,i) => `
+    <div class="loc-row" onclick="jumpToLoc(${i})">
+      <div class="loc-dot" style="background:${l.color||'#534ab7'};"></div>
+      <span class="loc-name">${esc(l.name)}</span>
+      <span class="loc-state">${owMap.revealed.has(`${l.col},${l.row}`)?'revealed':'hidden'}</span>
+    </div>`).join('');
+}
+function updateLocations() {
+  const el = document.getElementById('rp-locations');
+  if (el) el.innerHTML = renderLocationsHTML();
+}
+function addLocation() {
+  const name = prompt('Location name:');
+  if (!name) return;
+  const col = Math.floor(owCanvas ? owCanvas.width / owMap.hexSize / 2 : 5);
+  const row = Math.floor(owCanvas ? owCanvas.height / (Math.sqrt(3)*owMap.hexSize) / 2 : 4);
+  owMap.locations.push({ col, row, name, color:'#534ab7', revealed:true });
+  drawOw(); updateLocations(); showToast(`Added: ${name}`);
+}
+
+// ============================================================================
+// Battle map
+// ============================================================================
+let bCanvas, bCtx, bInited = false;
+
+function initBattle() {
+  if (bInited) return;
+  bInited = true;
+  bCanvas = document.getElementById('battle-canvas');
+  bCtx = bCanvas.getContext('2d');
+  resizeBattle();
+  window.addEventListener('resize', resizeBattle);
+  bCanvas.addEventListener('click', bClick);
+  document.getElementById('battle-placeholder').style.display = 'none';
+  drawBattle();
+}
+
+function resizeBattle() {
+  const wrap = bCanvas.parentElement;
+  bCanvas.width  = wrap.clientWidth;
+  bCanvas.height = wrap.clientHeight;
+  drawBattle();
+}
+
+function setBTool(t) {
+  bMap.tool = t;
+  document.querySelectorAll('.tool-btn[id^="btool-"]').forEach(b => b.classList.toggle('active', b.id==='btool-'+t));
+}
+function setBGridSize(v) { bMap.gridSize = Math.max(20, Math.min(120, Number(v))); drawBattle(); }
+
+function drawBattle() {
+  if (!bCtx) return;
+  const { width: W, height: H } = bCanvas;
+  const gs = bMap.gridSize;
+  bCtx.clearRect(0, 0, W, H);
+
+  // Grid
+  bCtx.strokeStyle = 'rgba(255,255,255,0.08)';
+  bCtx.lineWidth = 0.5;
+  for (let x = 0; x < W; x += gs) { bCtx.beginPath(); bCtx.moveTo(x,0); bCtx.lineTo(x,H); bCtx.stroke(); }
+  for (let y = 0; y < H; y += gs) { bCtx.beginPath(); bCtx.moveTo(0,y); bCtx.lineTo(W,y); bCtx.stroke(); }
+
+  // Fog cells
+  bCtx.fillStyle = 'rgba(0,0,0,0.7)';
+  bMap.fogCells.forEach(key => {
+    const [c, r] = key.split(',').map(Number);
+    bCtx.fillRect(c*gs, r*gs, gs, gs);
+  });
+
+  // Tokens
+  bMap.tokens.forEach(tok => {
+    const cx = tok.col * gs + gs/2, cy = tok.row * gs + gs/2, r = gs * 0.38;
+    bCtx.beginPath(); bCtx.arc(cx, cy, r, 0, Math.PI*2);
+    bCtx.fillStyle = tok.color || '#534ab7'; bCtx.fill();
+    bCtx.strokeStyle = 'rgba(255,255,255,0.6)'; bCtx.lineWidth = 1.5; bCtx.stroke();
+    bCtx.fillStyle = '#fff'; bCtx.font = `bold ${Math.max(9,gs*0.28)}px sans-serif`;
+    bCtx.textAlign = 'center'; bCtx.textBaseline = 'middle';
+    bCtx.fillText(tok.name[0].toUpperCase(), cx, cy);
+  });
+}
+
+let pendingToken = null;
+function placeToken() {
+  const name  = document.getElementById('token-name')?.value?.trim() || 'Token';
+  const color = document.getElementById('token-color')?.value || '#534ab7';
+  pendingToken = { name, color };
+  setBTool('token');
+  showToast(`Click map to place ${name}`);
+}
+
+function bClick(e) {
+  const rect = bCanvas.getBoundingClientRect();
+  const col = Math.floor((e.clientX - rect.left) / bMap.gridSize);
+  const row = Math.floor((e.clientY - rect.top)  / bMap.gridSize);
+  const key = `${col},${row}`;
+
+  if (bMap.tool === 'token' && pendingToken) {
+    bMap.tokens.push({ ...pendingToken, col, row, id: Date.now() });
+    pendingToken = null; setBTool('select'); drawBattle();
+  } else if (bMap.tool === 'fog') {
+    if (bMap.fogCells.has(key)) bMap.fogCells.delete(key);
+    else bMap.fogCells.add(key);
+    drawBattle();
+  }
+}
+
+function syncBattleToPlayers() { showToast('Battle map synced to players'); }
+function clearBattle() { if (confirm('Clear all tokens and fog?')) { bMap.tokens=[]; bMap.fogCells.clear(); drawBattle(); } }
+
+// ============================================================================
+// Party tracker
+// ============================================================================
+function saveParty() { localStorage.setItem('gm_party', JSON.stringify(party)); }
+
+function renderParty() {
+  if (currentTab !== 'party') return;
+  const grid = document.getElementById('party-grid');
+  if (!grid) return;
+  grid.innerHTML = party.map(pc => {
+    const pct = Math.max(0, Math.min(100, (pc.hp / pc.maxHp) * 100));
+    const barClass = pct > 50 ? '' : pct > 25 ? ' low' : ' crit';
+    return `
+    <div class="party-card">
+      <div class="party-card-head">
+        <div class="party-avatar" style="background:${pc.color};color:${pc.textColor};">${pc.name[0]}</div>
+        <div class="party-name-block">
+          <div class="party-name">${pc.name}</div>
+          <div class="party-class">${pc.cls}</div>
+        </div>
+        <div class="party-online${pc.online?' on':''}" title="${pc.online?'Online':'Offline'}"></div>
+      </div>
+      <div class="party-stats">
+        <div class="party-stat"><div class="party-stat-label">AC</div><div class="party-stat-val">${pc.ac}</div></div>
+        <div class="party-stat"><div class="party-stat-label">Speed</div><div class="party-stat-val">${pc.speed}</div></div>
+        <div class="party-stat"><div class="party-stat-label">Level</div><div class="party-stat-val">${pc.cls.match(/\d+/)?.[0]||'?'}</div></div>
+      </div>
+      <div class="party-hp-row">
+        <span class="party-hp-label">HP</span>
+        <div class="party-hp-bar"><div class="party-hp-fill${barClass}" style="width:${pct}%;"></div></div>
+        <span class="party-hp-nums">${pc.hp}/${pc.maxHp}</span>
+      </div>
+      <div class="party-conditions" id="cond-${pc.id}">
+        ${pc.conditions.map(c=>`<span class="condition-tag">${c}<span class="remove-c" onclick="removeCondition(${pc.id},'${c}')">&#215;</span></span>`).join('')}
+        <button class="add-condition-btn" onclick="addCondition(${pc.id})">+ condition</button>
+      </div>
+      <div class="party-quick-hp">
+        <button class="hp-adj-btn" onclick="adjustHp(${pc.id},-1)">&#8722;</button>
+        <input class="hp-adj-input" id="hp-adj-${pc.id}" type="number" placeholder="amt" min="1">
+        <button class="hp-adj-btn" onclick="adjustHp(${pc.id},1)">+</button>
+        <span class="hp-adj-label">quick adjust</span>
+        <button class="btn danger" style="padding:3px 8px;font-size:0.72em;" onclick="removePartyMember(${pc.id})">Remove</button>
+      </div>
+    </div>`; }).join('');
+}
+
+function updateHp(id, val) {
+  const pc = party.find(p=>p.id===id);
+  if (!pc) return;
+  pc.hp = Math.max(0, Math.min(pc.maxHp, Number(val)));
+  saveParty(); renderParty(); renderRPParty();
+}
+function adjustHp(id, dir) {
+  const input = document.getElementById(`hp-adj-${id}`);
+  const amt = Number(input?.value) || 1;
+  const pc = party.find(p=>p.id===id);
+  if (!pc) return;
+  pc.hp = Math.max(0, Math.min(pc.maxHp, pc.hp + dir * amt));
+  saveParty(); renderParty(); renderRPParty();
+}
+function addCondition(id) {
+  const c = prompt('Condition name (e.g. Stunned, Frightened):');
+  if (!c) return;
+  const pc = party.find(p=>p.id===id);
+  if (pc) { pc.conditions.push(c); saveParty(); renderParty(); }
+}
+function removeCondition(id, c) {
+  const pc = party.find(p=>p.id===id);
+  if (pc) { pc.conditions = pc.conditions.filter(x=>x!==c); saveParty(); renderParty(); }
+}
+function addPartyMember() {
+  const name = prompt('Character name:'); if (!name) return;
+  const cls  = prompt('Class & level (e.g. Fighter 8):') || '';
+  const hp   = Number(prompt('Max HP:')) || 10;
+  const ac   = Number(prompt('AC:')) || 10;
+  const id   = Date.now();
+  const colors = ['#EEEDFE','#E1F5EE','#FAEEDA','#E6F1FB','#FBEAF0'];
+  const tcolors= ['#3C3489','#085041','#633806','#0C447C','#72243E'];
+  const idx = party.length % colors.length;
+  party.push({ id, name, cls, hp, maxHp:hp, ac, speed:25, conditions:[], color:colors[idx], textColor:tcolors[idx], online:false });
+  saveParty(); renderParty(); renderRPParty();
+}
+function removePartyMember(id) {
+  if (!confirm('Remove this party member?')) return;
+  party = party.filter(p=>p.id!==id); saveParty(); renderParty();
+}
+
+// ============================================================================
+// Notes
+// ============================================================================
+function saveNotes() {
+  const v = document.getElementById('gm-notes')?.value || '';
+  localStorage.setItem('gm_notes', v);
+  showToast('Notes saved');
+}
+
+// ============================================================================
+// Resizable right panel
+// ============================================================================
+(function() {
+  const divider = document.getElementById('rp-divider');
+  const panel   = document.getElementById('right-panel');
+  let dragging = false, startX = 0, startW = 0;
+  divider.addEventListener('mousedown', e => {
+    dragging = true; startX = e.clientX; startW = panel.offsetWidth;
+    document.body.style.userSelect = 'none';
+  });
+  window.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const w = Math.max(220, Math.min(500, startW - (e.clientX - startX)));
+    panel.style.width = w + 'px';
+  });
+  window.addEventListener('mouseup', () => { dragging = false; document.body.style.userSelect = ''; });
+})();
+
+// ============================================================================
+// Toast
+// ============================================================================
+function showToast(msg) {
+  const w = document.getElementById('toast-wrap');
+  const t = Object.assign(document.createElement('div'), { className: 'toast', textContent: msg });
+  w.appendChild(t); setTimeout(() => t.remove(), 3000);
+}
+
+// ============================================================================
+// Helpers
+// ============================================================================
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function poolStr(pool) { return (pool||[]).map(p=>`${p.count}d${p.sides}`).join('+'); }
+function dosClass(dos) {
+  if (dos==='Critical success') return 'dos-cs';
+  if (dos==='Success')          return 'dos-s';
+  if (dos==='Failure')          return 'dos-f';
+  if (dos==='Critical failure') return 'dos-cf';
+  return '';
+}
+function rollInitiative() { showToast('Roll initiative: coming soon'); }
+
+// ============================================================================
+// Init
+// ============================================================================
+loadTracks();
+buildRightPanel('audio');
+renderParty();
+</script>
 </body>
 </html>

@@ -147,6 +147,8 @@ function calcDegreeOfSuccess(total, dc, isNat20, isNat1) {
 
 
 
+let connectedClients = { dm: null, players: new Set() };
+
 // Per-player sync state: socketId -> { syncMode: 'LIVE'|'PAUSED', pausedAt: timestamp|null }
 const playerSyncState = new Map();
 

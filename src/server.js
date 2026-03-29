@@ -62,11 +62,18 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/audio/bgm', express.static(AUDIO_DIRS.bgm));
 app.use('/audio/ambience', express.static(AUDIO_DIRS.ambience));
 app.use('/audio/sfx', express.static(AUDIO_DIRS.sfx));
+// Serve dice-box assets (3D dice WebGL library)
+app.use('/assets/dice-box', express.static(path.join(__dirname, 'public', 'assets', 'dice-box')));
 app.use(express.json());
 
 // Serve player.js from root (sits alongside server.js)
 app.get('/player.js', (req, res) => {
   res.sendFile(path.join(__dirname, 'player.js'));
+});
+
+// Serve dice.js from root
+app.get('/dice.js', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dice.js'));
 });
 
 // Current playback state
@@ -102,7 +109,43 @@ function getLiveState() {
   };
 }
 
-let connectedClients = { dm: null, players: new Set() };
+// ---------------------------------------------------------------------------
+// Dice state — per-character roll history (session-scoped, in memory)
+// ---------------------------------------------------------------------------
+
+// rollHistory: Map of characterName -> Array of roll records
+// Each record: { id, roller, label, pool, modifiers, total, dice, visibility,
+//                degreeOfSuccess, dc, timestamp, isNat20, isNat1 }
+const rollHistory = new Map();
+const sessionFeed = []; // flat ordered list for the live feed (last 100 rolls)
+const MAX_FEED    = 100;
+
+function addToHistory(record) {
+  const key = record.roller;
+  if (!rollHistory.has(key)) rollHistory.set(key, []);
+  rollHistory.get(key).unshift(record); // newest first
+  if (rollHistory.get(key).length > 200) rollHistory.get(key).pop();
+
+  sessionFeed.unshift(record);
+  if (sessionFeed.length > MAX_FEED) sessionFeed.pop();
+}
+
+// Degree of success calculation per PF2e rules:
+// nat20 upgrades result by one step, nat1 downgrades by one step
+function calcDegreeOfSuccess(total, dc, isNat20, isNat1) {
+  if (!dc) return null;
+  const margin = total - dc;
+  let degree; // 0=crit fail, 1=fail, 2=success, 3=crit success
+  if      (margin >= 10)  degree = 3;
+  else if (margin >= 0)   degree = 2;
+  else if (margin >= -9)  degree = 1;
+  else                    degree = 0;
+  if (isNat20) degree = Math.min(3, degree + 1);
+  if (isNat1)  degree = Math.max(0, degree - 1);
+  return ['Critical failure', 'Failure', 'Success', 'Critical success'][degree];
+}
+
+
 
 // Per-player sync state: socketId -> { syncMode: 'LIVE'|'PAUSED', pausedAt: timestamp|null }
 const playerSyncState = new Map();
@@ -212,6 +255,15 @@ app.delete('/api/tracks/:category/:filename', (req, res) => {
 
 app.get('/api/state', (req, res) => {
   res.json(playbackState);
+});
+
+app.get('/api/dice/history/:character', (req, res) => {
+  const history = rollHistory.get(req.params.character) || [];
+  res.json({ character: req.params.character, rolls: history });
+});
+
+app.get('/api/dice/feed', (req, res) => {
+  res.json(sessionFeed);
 });
 
 // Socket.IO for real-time sync
@@ -381,6 +433,99 @@ io.on('connection', (socket) => {
       socket.emit('player:rejoin:state', getLiveState());
       broadcastClientUpdate();
     }
+  });
+
+  // ── Dice ──────────────────────────────────────────────────────────────────
+
+  socket.on('dice:roll', (payload) => {
+    // payload: { pool, modifiers, label, dc, visibility, roller }
+    // pool: [{ sides, count }]  e.g. [{ sides: 20, count: 1 }, { sides: 6, count: 1 }]
+    // modifiers: { prof, item, status, circ }  (all numbers, 0 if unused)
+    // visibility: 'public' | 'private'
+    // roller: player name (self-reported, tied to registered name)
+
+    const { pool, modifiers, label, dc, visibility, roller } = payload;
+
+    // Validate
+    if (!pool || !Array.isArray(pool) || pool.length === 0) return;
+    const rollerName = roller || socket.playerName || 'Unknown';
+
+    // Roll each die server-side — clients only get the result, not the seed.
+    // The 3D animation on each client is cosmetic; this is the authoritative result.
+    const diceResults = pool.flatMap(({ sides, count }) =>
+      Array.from({ length: count }, () => ({
+        sides,
+        value: Math.floor(Math.random() * sides) + 1
+      }))
+    );
+
+    const diceSum   = diceResults.reduce((s, d) => s + d.value, 0);
+    const modTotal  = Object.values(modifiers || {}).reduce((s, v) => s + (Number(v) || 0), 0);
+    const total     = diceSum + modTotal;
+
+    // PF2e nat 20 / nat 1 — only meaningful on a single d20
+    const d20rolls  = diceResults.filter(d => d.sides === 20);
+    const isNat20   = d20rolls.length === 1 && d20rolls[0].value === 20;
+    const isNat1    = d20rolls.length === 1 && d20rolls[0].value === 1;
+
+    const dos = calcDegreeOfSuccess(total, dc ? Number(dc) : null, isNat20, isNat1);
+
+    const record = {
+      id:              `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      roller:          rollerName,
+      label:           label || null,
+      pool,
+      modifiers:       modifiers || {},
+      modTotal,
+      diceResults,
+      diceSum,
+      total,
+      dc:              dc ? Number(dc) : null,
+      degreeOfSuccess: dos,
+      isNat20,
+      isNat1,
+      visibility,
+      timestamp:       Date.now(),
+      socketId:        socket.id,
+      role:            socket.role
+    };
+
+    addToHistory(record);
+
+    // Build what different audiences see:
+    const publicRecord  = { ...record };
+    const privateRecord = { ...record, diceResults: null, diceSum: null, total: null,
+                            degreeOfSuccess: null, isNat20: false, isNat1: false,
+                            redacted: true };
+
+    if (visibility === 'public') {
+      // Everyone sees full result
+      io.emit('dice:result', publicRecord);
+    } else {
+      // Private: roller + GM see full, all other players see redacted
+      io.sockets.sockets.forEach((s) => {
+        if (s.id === socket.id) {
+          s.emit('dice:result', publicRecord);  // own result — full
+        } else if (s.role === 'dm') {
+          s.emit('dice:result', publicRecord);  // GM always sees all
+        } else {
+          s.emit('dice:result', privateRecord); // other players — redacted
+        }
+      });
+    }
+
+    console.log(`[dice] ${rollerName} rolled ${pool.map(p=>`${p.count}d${p.sides}`).join('+')} = ${total} (${visibility})`);
+  });
+
+  // Send roll history for a specific character
+  socket.on('dice:history:request', ({ character }) => {
+    const history = rollHistory.get(character) || [];
+    socket.emit('dice:history', { character, rolls: history });
+  });
+
+  // Send the current session feed on connect (for late joiners)
+  socket.on('dice:feed:request', () => {
+    socket.emit('dice:feed', sessionFeed);
   });
 
   socket.on('disconnect', () => {

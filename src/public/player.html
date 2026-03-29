@@ -520,6 +520,163 @@
       .bottom-nav { display: none; }
     }
 
+
+    /* ── DICE ROLLER ── */
+    .dice-layout {
+      display: grid;
+      grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+      gap: 12px;
+    }
+    @media (max-width: 640px) { .dice-layout { grid-template-columns: 1fr; } }
+
+    .dice-selector { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .die-btn {
+      width: 52px; height: 52px; border: 1px solid var(--border2); border-radius: 10px;
+      background: var(--bg3); color: var(--text2); cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 2px; transition: border-color 0.15s, background 0.15s; user-select: none;
+    }
+    .die-btn:hover { border-color: var(--accent); color: var(--text); }
+    .die-btn.has-dice { border-color: var(--accent2); background: var(--accent-bg); color: var(--accent); }
+    .die-btn-face  { font-size: 1.2em; font-weight: 600; line-height: 1; }
+    .die-btn-label { font-size: 0.68em; opacity: 0.7; }
+
+    .dice-pool-list { margin-bottom: 10px; min-height: 32px; }
+    .dice-pool-empty { font-size: 0.8em; color: var(--text3); padding: 6px 0; }
+    .dice-pool-row {
+      display: flex; align-items: center; gap: 8px; padding: 5px 8px;
+      background: var(--bg3); border-radius: 6px; margin-bottom: 4px;
+    }
+    .dice-pool-label { font-size: 0.88em; font-weight: 600; flex: 1; }
+    .dice-pool-controls { display: flex; align-items: center; gap: 6px; }
+    .dice-qty-btn {
+      width: 22px; height: 22px; border: 1px solid var(--border2); border-radius: 4px;
+      background: var(--bg2); color: var(--text); font-size: 0.9em; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .dice-qty-btn:hover { border-color: var(--accent); }
+    .dice-qty-val { font-size: 0.85em; font-weight: 600; min-width: 14px; text-align: center; }
+    .dice-remove-btn {
+      font-size: 0.75em; color: var(--text3); cursor: pointer;
+      padding: 2px 4px; border-radius: 3px; background: none; border: none;
+    }
+    .dice-remove-btn:hover { color: var(--red); }
+
+    .dice-mod-rows { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+    .dice-mod-row  { display: flex; align-items: center; gap: 8px; }
+    .dice-mod-tag {
+      font-size: 0.72em; font-weight: 600; padding: 2px 8px; border-radius: 20px;
+      min-width: 44px; text-align: center;
+    }
+    .dice-mod-tag.prof   { background: #1e1a38; color: #7c6fd4; }
+    .dice-mod-tag.item   { background: #0d2920; color: #1d9e75; }
+    .dice-mod-tag.status { background: #251a08; color: #ba7517; }
+    .dice-mod-tag.circ   { background: #2a1210; color: #d85a30; }
+    .dice-mod-input {
+      width: 56px; font-size: 0.85em; text-align: center; padding: 4px 6px;
+      border: 1px solid var(--border2); border-radius: 6px;
+      background: var(--bg3); color: var(--text); outline: none;
+    }
+    .dice-mod-input:focus { border-color: var(--accent); }
+    .dice-mod-total-row { font-size: 0.8em; color: var(--text2); padding-top: 4px; border-top: 1px solid var(--border); }
+    #dice-mod-total { font-weight: 600; }
+
+    .dice-label-row { display: grid; grid-template-columns: 1fr 60px; gap: 8px; margin-bottom: 10px; }
+    .dice-text-input {
+      width: 100%; padding: 7px 10px; border: 1px solid var(--border2);
+      border-radius: 6px; background: var(--bg3); color: var(--text);
+      font-size: 0.85em; outline: none;
+    }
+    .dice-text-input:focus { border-color: var(--accent); }
+    .dice-text-input::placeholder { color: var(--text3); }
+
+    .dice-vis-toggle { display: flex; border: 1px solid var(--border2); border-radius: 6px; overflow: hidden; margin-bottom: 12px; }
+    .dice-vis-btn {
+      flex: 1; padding: 7px; font-size: 0.82em; text-align: center;
+      cursor: pointer; background: var(--bg3); color: var(--text2); border: none;
+    }
+    .dice-vis-btn.active { background: var(--bg2); color: var(--text); font-weight: 600; }
+
+    #dice-roll-btn {
+      width: 100%; padding: 10px; font-size: 0.9em; font-weight: 600;
+      border: none; border-radius: 8px; background: var(--accent2); color: #fff;
+      cursor: pointer; transition: opacity 0.15s;
+    }
+    #dice-roll-btn:hover:not(:disabled) { opacity: 0.85; }
+    #dice-roll-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .dice-3d-tray-container {
+      width: 100%; aspect-ratio: 16/9; background: var(--bg3);
+      border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+      margin-bottom: 10px; position: relative;
+    }
+    #dice-3d-tray { width: 100%; height: 100%; display: block; }
+
+    .dice-result-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 14px; text-align: center; margin-bottom: 10px;
+    }
+    .dice-dos-label { font-size: 0.78em; font-weight: 600; letter-spacing: 0.04em; min-height: 1.2em; margin-bottom: 4px; }
+    .dice-dos-label.rolling { color: var(--text3); }
+    .dice-dos-label.dos-cs  { color: var(--green); }
+    .dice-dos-label.dos-s   { color: #378add; }
+    .dice-dos-label.dos-f   { color: var(--amber); }
+    .dice-dos-label.dos-cf  { color: var(--red); }
+    .dice-total { font-size: 2.6em; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+    .dice-total.nat20 { color: var(--green); }
+    .dice-total.nat1  { color: var(--red); }
+    .dice-formula { font-size: 0.78em; color: var(--text2); margin-bottom: 6px; }
+    .dice-nat-pill { display: inline-block; font-size: 0.72em; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+    .dice-nat-pill.nat20 { background: var(--green-bg); color: var(--green); }
+    .dice-nat-pill.nat1  { background: var(--red-bg);   color: var(--red); }
+
+    .dice-panel-tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; margin-bottom: 0; }
+    .dice-panel-tab {
+      flex: 1; padding: 8px 12px; font-size: 0.82em; text-align: center;
+      cursor: pointer; color: var(--text2); border-bottom: 2px solid transparent;
+    }
+    .dice-panel-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+
+    .dice-feed-panel, .dice-history-panel { overflow-y: auto; max-height: 420px; }
+    .dice-feed-empty { font-size: 0.82em; color: var(--text3); padding: 16px; text-align: center; }
+    .dice-feed-entry { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+    .dice-feed-entry:last-child { border-bottom: none; }
+    .dice-feed-entry.redacted { opacity: 0.55; }
+    .dice-feed-row1 { display: flex; align-items: baseline; gap: 6px; margin-bottom: 3px; }
+    .dice-feed-name  { font-size: 0.85em; font-weight: 600; }
+    .dice-feed-label { font-size: 0.78em; color: var(--text2); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dice-feed-time  { font-size: 0.72em; color: var(--text3); white-space: nowrap; }
+    .dice-feed-row2  { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+    .dice-feed-total { font-size: 1.3em; font-weight: 600; }
+    .dice-feed-total.nat20 { color: var(--green); }
+    .dice-feed-total.nat1  { color: var(--red); }
+    .dice-feed-formula { font-size: 0.78em; color: var(--text2); }
+    .dice-feed-private { font-size: 0.78em; color: var(--text3); font-style: italic; }
+    .dice-priv-tag { font-size: 0.68em; padding: 1px 6px; border-radius: 10px; background: var(--bg3); color: var(--text3); }
+
+    .dice-dos-pill { font-size: 0.68em; font-weight: 600; padding: 1px 7px; border-radius: 20px; }
+    .dice-dos-pill.dos-cs { background: var(--green-bg); color: var(--green); }
+    .dice-dos-pill.dos-s  { background: #0c1e2e; color: #378add; }
+    .dice-dos-pill.dos-f  { background: var(--amber-bg); color: var(--amber); }
+    .dice-dos-pill.dos-cf { background: var(--red-bg); color: var(--red); }
+    .dice-nat-pill.small  { font-size: 0.68em; padding: 1px 6px; }
+
+    .dice-hist-selector { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+    .dice-hist-chip {
+      font-size: 0.78em; padding: 3px 10px; border-radius: 20px;
+      border: 1px solid var(--border2); background: var(--bg3); color: var(--text2); cursor: pointer;
+    }
+    .dice-hist-chip.active { background: var(--accent-bg); border-color: var(--accent2); color: var(--accent); }
+    .dice-hist-row { display: flex; align-items: center; gap: 8px; padding: 7px 12px; border-bottom: 1px solid var(--border); font-size: 0.82em; }
+    .dice-hist-row:last-child { border-bottom: none; }
+    .dice-hist-label  { flex: 1; color: var(--text2); }
+    .dice-hist-total  { font-weight: 600; min-width: 28px; text-align: right; }
+    .dice-hist-total.nat20 { color: var(--green); }
+    .dice-hist-total.nat1  { color: var(--red); }
+    .dice-hist-formula { font-size: 0.78em; color: var(--text3); }
+    .dice-hist-time   { font-size: 0.72em; color: var(--text3); white-space: nowrap; }
+    .dice-sec-label { font-size: 0.7em; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); margin-bottom: 6px; }
+
     /* ── PULSE ANIMATION ── */
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.45} }
     .pulse { animation: pulse 2s infinite; }
@@ -652,14 +809,120 @@
 
       </div><!-- /tab-audio -->
 
-      <!-- DICE TAB (placeholder) -->
+      <!-- DICE TAB -->
       <div class="tab-page" id="tab-dice">
-        <div class="coming-soon">
-          <div class="coming-soon-icon">&#9861;</div>
-          <h3>Dice roller</h3>
-          <p>Coming soon &mdash; PF2e dice pools, modifier breakdown, live feed.</p>
-        </div>
-      </div>
+        <div class="dice-layout">
+
+          <!-- LEFT: Roll interface -->
+          <div>
+
+            <div class="dice-sec-label">Select dice</div>
+            <div class="dice-selector">
+              <div class="die-btn" onclick="addDie(4)"  title="Add d4">
+                <span class="die-btn-face">&#9670;</span><span class="die-btn-label">d4</span>
+              </div>
+              <div class="die-btn" onclick="addDie(6)"  title="Add d6">
+                <span class="die-btn-face">&#9632;</span><span class="die-btn-label">d6</span>
+              </div>
+              <div class="die-btn" onclick="addDie(8)"  title="Add d8">
+                <span class="die-btn-face">&#9670;</span><span class="die-btn-label">d8</span>
+              </div>
+              <div class="die-btn" onclick="addDie(10)" title="Add d10">
+                <span class="die-btn-face">&#9671;</span><span class="die-btn-label">d10</span>
+              </div>
+              <div class="die-btn" onclick="addDie(12)" title="Add d12">
+                <span class="die-btn-face">&#9670;</span><span class="die-btn-label">d12</span>
+              </div>
+              <div class="die-btn" onclick="addDie(20)" title="Add d20">
+                <span class="die-btn-face">&#9670;</span><span class="die-btn-label">d20</span>
+              </div>
+              <div class="die-btn" onclick="addDie(100)" title="Add d100">
+                <span class="die-btn-face">%</span><span class="die-btn-label">d100</span>
+              </div>
+            </div>
+
+            <div class="dice-sec-label">Pool</div>
+            <div class="dice-pool-list" id="dice-pool-list">
+              <div class="dice-pool-empty">Click a die above to add it to your pool</div>
+            </div>
+
+            <div class="dice-sec-label">Modifiers</div>
+            <div class="dice-mod-rows">
+              <div class="dice-mod-row">
+                <span class="dice-mod-tag prof">Prof</span>
+                <input class="dice-mod-input" id="dice-mod-prof" type="number" value="0" step="1">
+                <span style="font-size:0.78em;color:var(--text3);">proficiency</span>
+              </div>
+              <div class="dice-mod-row">
+                <span class="dice-mod-tag item">Item</span>
+                <input class="dice-mod-input" id="dice-mod-item" type="number" value="0" step="1">
+                <span style="font-size:0.78em;color:var(--text3);">item bonus</span>
+              </div>
+              <div class="dice-mod-row">
+                <span class="dice-mod-tag status">Status</span>
+                <input class="dice-mod-input" id="dice-mod-status" type="number" value="0" step="1">
+              </div>
+              <div class="dice-mod-row">
+                <span class="dice-mod-tag circ">Circ</span>
+                <input class="dice-mod-input" id="dice-mod-circ" type="number" value="0" step="1">
+              </div>
+              <div class="dice-mod-total-row">
+                Total modifier: <span id="dice-mod-total">+0</span>
+              </div>
+            </div>
+
+            <div class="dice-sec-label">Label &amp; DC</div>
+            <div class="dice-label-row">
+              <input class="dice-text-input" id="dice-label" type="text" placeholder="e.g. Perception check" maxlength="60">
+              <input class="dice-text-input" id="dice-dc" type="number" placeholder="DC" min="1" max="99">
+            </div>
+
+            <div class="dice-vis-toggle">
+              <button class="dice-vis-btn active" data-vis="public"  onclick="setVisibility('public')">Public</button>
+              <button class="dice-vis-btn"        data-vis="private" onclick="setVisibility('private')">Private</button>
+            </div>
+
+            <button id="dice-roll-btn" onclick="rollDice()" disabled>Select dice above</button>
+
+          </div><!-- /left -->
+
+          <!-- RIGHT: Tray + feed -->
+          <div style="display:flex;flex-direction:column;gap:10px;">
+
+            <!-- 3D tray -->
+            <div class="dice-3d-tray-container">
+              <div id="dice-3d-tray"></div>
+            </div>
+
+            <!-- Result card -->
+            <div class="dice-result-card" id="dice-tray">
+              <div class="dice-dos-label" id="dice-dos-label"></div>
+              <div class="dice-total" id="dice-total">&mdash;</div>
+              <div class="dice-formula" id="dice-formula">Select dice and roll</div>
+              <span class="dice-nat-pill" id="dice-nat-pill"></span>
+            </div>
+
+            <!-- Feed / history panel -->
+            <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;flex:1;">
+              <div class="dice-panel-tabs">
+                <div class="dice-panel-tab active" data-panel="feed"    onclick="switchDicePanel('feed')">Live feed</div>
+                <div class="dice-panel-tab"         data-panel="history" onclick="switchDicePanel('history')">History</div>
+              </div>
+              <div class="dice-feed-panel" id="dice-feed-panel">
+                <div class="dice-feed-empty">No rolls yet this session</div>
+              </div>
+              <div class="dice-history-panel" id="dice-history-panel" style="display:none;">
+                <div id="dice-history-selector" class="dice-hist-selector"></div>
+                <div id="dice-history-list">
+                  <div class="dice-feed-empty">No roll history yet</div>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /right -->
+
+        </div><!-- /dice-layout -->
+      </div><!-- /tab-dice -->
 
       <!-- MAP TAB (placeholder) -->
       <div class="tab-page" id="tab-map">
@@ -824,5 +1087,6 @@
     }
   </script>
   <script src="/player.js"></script>
+  <script src="/dice.js"></script>
 </body>
 </html>

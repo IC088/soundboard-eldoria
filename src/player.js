@@ -255,6 +255,7 @@ function submitLogin() {
   localStorage.setItem('soundboard_player_name', name);
   document.getElementById('login-overlay').classList.add('hidden');
   document.getElementById('header-player-name').textContent = name;
+  if (typeof setAvatarInitial === 'function') setAvatarInitial(name);
 
   // If socket already connected register immediately, otherwise connect handler fires
   if (socket.connected) {
@@ -318,19 +319,24 @@ function pauseLocal() {
   if (bgm) bgm.pause();
   if (amb) amb.pause();
 
-  document.getElementById('local-pause-btn').textContent = '▶ Resume & Resync';
+  // Update new UI
+  document.getElementById('local-pause-btn').textContent = 'Resume & resync';
   document.getElementById('local-pause-btn').classList.add('paused');
   document.getElementById('desync-banner').classList.add('visible');
   document.getElementById('force-rejoin-banner').classList.remove('visible');
+  if (typeof syncPauseCardUI === 'function') syncPauseCardUI(true);
+  updateNowPlaying();
 }
 
 function resumeLocal() {
   localPaused = false;
   socket.emit('player:local:resume');
   // Actual audio snap happens when server responds with player:rejoin:state
-  document.getElementById('local-pause-btn').textContent = '⏸ Pause My Audio';
+  document.getElementById('local-pause-btn').textContent = 'Pause my audio';
   document.getElementById('local-pause-btn').classList.remove('paused');
   document.getElementById('desync-banner').classList.remove('visible');
+  if (typeof syncPauseCardUI === 'function') syncPauseCardUI(false);
+  updateNowPlaying();
 }
 
 function applyRejoinState(state) {
@@ -369,11 +375,12 @@ socket.on('player:rejoin:state', (state) => {
 socket.on('player:force:rejoin', (state) => {
   console.log('Force rejoin triggered by track change');
   localPaused = false;
-  document.getElementById('local-pause-btn').textContent = '⏸ Pause My Audio';
+  document.getElementById('local-pause-btn').textContent = 'Pause my audio';
   document.getElementById('local-pause-btn').classList.remove('paused');
   document.getElementById('desync-banner').classList.remove('visible');
   document.getElementById('force-rejoin-banner').classList.add('visible');
   setTimeout(() => document.getElementById('force-rejoin-banner').classList.remove('visible'), 4000);
+  if (typeof syncPauseCardUI === 'function') syncPauseCardUI(false);
   applyRejoinState(state);
 });
 
@@ -410,42 +417,54 @@ function updateNowPlaying() {
   const container = document.getElementById('now-playing-content');
   const { bgm, ambience } = currentlyPlaying;
 
+  // Update the always-visible now-playing strip
+  if (typeof updateNowPlayingStrip === 'function') {
+    updateNowPlayingStrip(bgm, ambience, localPaused);
+  }
+
+  // Update the detail sub-label
+  const detailSub = document.getElementById('np-detail-sub');
+  if (detailSub) {
+    detailSub.textContent = localPaused ? 'Locally paused' : 'GM-controlled';
+    detailSub.style.color = localPaused ? 'var(--amber, #ba7517)' : '';
+  }
+
   if (!bgm && !ambience) {
-    container.innerHTML = `
-      <div class="nothing-playing">
-        <div class="nothing-playing-icon">🎵</div>
-        <p>Waiting for your GM to start audio...</p>
-      </div>`;
+    container.innerHTML = `<div class="nothing-playing">Waiting for your GM to start audio&hellip;</div>`;
     return;
   }
 
   let html = '';
 
   if (bgm && bgm.track) {
-    const name   = bgm.track.name || bgm.track.filename || 'Unknown Track';
+    const name   = bgm.track.name || bgm.track.filename || 'Unknown track';
     const volume = bgm.volume !== undefined ? bgm.volume : 0.5;
+    const dotClass = localPaused ? 'paused-local' : 'playing';
+    const nameClass = localPaused ? 'dim' : '';
     html += `
-      <div class="track-item">
-        <div class="track-indicator"></div>
+      <div class="track-row">
+        <div class="track-dot ${dotClass}"></div>
         <div class="track-info">
-          <div class="track-name">🎵 ${name}</div>
-          <div class="track-type">Background Music</div>
-          <div class="dm-volume">GM Volume: ${Math.round(volume * 100)}%</div>
+          <div class="track-name ${nameClass}">${name}</div>
+          <div class="track-type">Background music${localPaused ? ' \u00b7 paused on your end' : ' \u00b7 looping'}</div>
         </div>
+        <span class="track-gm-vol">GM ${Math.round(volume * 100)}%</span>
       </div>`;
   }
 
   if (ambience && ambience.track) {
-    const name   = ambience.track.name || ambience.track.filename || 'Unknown Track';
+    const name   = ambience.track.name || ambience.track.filename || 'Unknown track';
     const volume = ambience.volume !== undefined ? ambience.volume : 0.3;
+    const dotClass = localPaused ? 'paused-local' : 'playing';
+    const nameClass = localPaused ? 'dim' : '';
     html += `
-      <div class="track-item">
-        <div class="track-indicator"></div>
+      <div class="track-row">
+        <div class="track-dot ${dotClass}"></div>
         <div class="track-info">
-          <div class="track-name">🌊 ${name}</div>
-          <div class="track-type">Ambience</div>
-          <div class="dm-volume">GM Volume: ${Math.round(volume * 100)}%</div>
+          <div class="track-name ${nameClass}">${name}</div>
+          <div class="track-type">Ambience${localPaused ? ' \u00b7 paused on your end' : ' \u00b7 looping'}</div>
         </div>
+        <span class="track-gm-vol">GM ${Math.round(volume * 100)}%</span>
       </div>`;
   }
 

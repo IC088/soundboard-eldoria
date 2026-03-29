@@ -3,479 +3,526 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Wildlands Soundboard - Player View</title>
+  <title>Eldoria Soundboard</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0d0d12;
+      --bg2:      #16161f;
+      --bg3:      #1e1e2a;
+      --border:   rgba(255,255,255,0.08);
+      --border2:  rgba(255,255,255,0.14);
+      --text:     #e8e6f0;
+      --text2:    #9896a8;
+      --text3:    #5e5c6e;
+      --accent:   #7c6fd4;
+      --accent2:  #534ab7;
+      --accent-bg:#1e1a38;
+      --green:    #1d9e75;
+      --green-bg: #0d2920;
+      --amber:    #ba7517;
+      --amber-bg: #251a08;
+      --red:      #e24b4a;
+      --red-bg:   #2a0f0f;
+      --gold:     #e0af68;
     }
 
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #2c1810 0%, #1a0f08 100%);
-      color: #fff;
-      min-height: 100vh;
-      padding: 20px;
+    html, body {
+      height: 100%;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.5;
     }
 
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-    }
-
-    header {
-      text-align: center;
-      padding: 30px 0;
-      background: rgba(255, 180, 50, 0.1);
-      border-radius: 15px;
-      margin-bottom: 30px;
-      border: 2px solid rgba(255, 180, 50, 0.3);
-    }
-
-    h1 {
-      color: #ffb432;
-      font-size: 2.5em;
-      margin-bottom: 10px;
-      text-shadow: 0 0 20px rgba(255, 180, 50, 0.5);
-    }
-
-    .subtitle {
-      color: rgba(255, 255, 255, 0.7);
-      font-size: 1.1em;
-    }
-
-    .status {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      margin-top: 15px;
-    }
-
-    .status-indicator {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: #4caf50;
-      box-shadow: 0 0 10px #4caf50;
-      animation: pulse 2s infinite;
-    }
-
-    .status-indicator.disconnected {
-      background: #f44336;
-      box-shadow: 0 0 10px #f44336;
-      animation: none;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-
-    /* Login Overlay */
+    /* ── LOGIN OVERLAY ── */
     #login-overlay {
       position: fixed;
       inset: 0;
-      background: linear-gradient(135deg, #2c1810 0%, #1a0f08 100%);
+      background: var(--bg);
       z-index: 1000;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 20px;
     }
-
-    #login-overlay.hidden {
-      display: none;
-    }
+    #login-overlay.hidden { display: none; }
 
     .login-card {
-      background: rgba(30, 20, 10, 0.95);
-      border: 2px solid rgba(255, 180, 50, 0.4);
+      background: var(--bg2);
+      border: 1px solid var(--border2);
       border-radius: 16px;
       padding: 40px 36px;
       width: 100%;
-      max-width: 420px;
+      max-width: 400px;
       text-align: center;
-      box-shadow: 0 0 60px rgba(255, 180, 50, 0.1);
     }
-
-    .login-card .login-icon {
-      font-size: 3em;
-      margin-bottom: 12px;
-    }
-
+    .login-icon { font-size: 2.4em; margin-bottom: 14px; }
     .login-card h2 {
-      color: #ffb432;
-      font-size: 1.8em;
+      font-size: 1.5em;
+      font-weight: 600;
+      color: var(--gold);
       margin-bottom: 6px;
-      text-shadow: 0 0 20px rgba(255, 180, 50, 0.4);
     }
-
     .login-card p {
-      color: rgba(255, 255, 255, 0.6);
+      color: var(--text2);
       margin-bottom: 28px;
-      font-size: 1em;
+      font-size: 0.95em;
     }
-
     .login-card input[type="text"] {
       width: 100%;
-      padding: 14px 18px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 2px solid rgba(255, 180, 50, 0.3);
+      padding: 12px 16px;
+      background: var(--bg3);
+      border: 1px solid var(--border2);
       border-radius: 8px;
-      color: #fff;
-      font-size: 1.1em;
+      color: var(--text);
+      font-size: 1em;
       text-align: center;
       outline: none;
-      transition: border-color 0.3s, box-shadow 0.3s;
-      margin-bottom: 16px;
-    }
-
-    .login-card input[type="text"]::placeholder {
-      color: rgba(255, 255, 255, 0.3);
-    }
-
-    .login-card input[type="text"]:focus {
-      border-color: #ffb432;
-      box-shadow: 0 0 20px rgba(255, 180, 50, 0.2);
-    }
-
-    .login-card .login-error {
-      color: #f44336;
-      font-size: 0.9em;
+      transition: border-color 0.2s;
       margin-bottom: 12px;
-      min-height: 1.2em;
     }
-
+    .login-card input[type="text"]:focus { border-color: var(--accent); }
+    .login-card input[type="text"]::placeholder { color: var(--text3); }
+    .login-error {
+      color: var(--red);
+      font-size: 0.85em;
+      min-height: 1.2em;
+      margin-bottom: 10px;
+    }
     .login-card button {
       width: 100%;
-      padding: 14px;
-      background: rgba(255, 180, 50, 0.2);
-      border: 2px solid rgba(255, 180, 50, 0.6);
+      padding: 12px;
+      background: var(--accent2);
+      border: none;
       border-radius: 8px;
-      color: #ffb432;
-      font-size: 1.1em;
-      font-weight: bold;
+      color: #fff;
+      font-size: 1em;
+      font-weight: 600;
       cursor: pointer;
-      transition: all 0.3s;
+      transition: opacity 0.2s;
     }
+    .login-card button:hover { opacity: 0.85; }
 
-    .login-card button:hover {
-      background: rgba(255, 180, 50, 0.35);
-      border-color: #ffb432;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 20px rgba(255, 180, 50, 0.3);
-    }
-
-    .login-card button:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    .player-name-badge {
-      color: #ffb432;
-      font-weight: bold;
-    }
-
-    /* Local Pause Panel */
-    .local-pause-panel {
-      background: rgba(30, 30, 30, 0.9);
-      border: 2px solid rgba(255, 180, 50, 0.3);
-      border-radius: 10px;
-      padding: 20px;
-      margin: 20px 0;
-      text-align: center;
-    }
-
-    .local-pause-panel h3 {
-      color: #ffb432;
-      margin-bottom: 8px;
-      font-size: 1.1em;
-    }
-
-    .local-pause-panel p {
-      color: rgba(255, 255, 255, 0.6);
-      font-size: 0.9em;
-      margin-bottom: 16px;
-    }
-
-    #local-pause-btn {
-      padding: 12px 32px;
-      font-size: 1.1em;
-      font-weight: bold;
-      border-radius: 8px;
-      border: 2px solid rgba(255, 180, 50, 0.6);
-      background: rgba(255, 180, 50, 0.15);
-      color: #ffb432;
-      cursor: pointer;
-      transition: all 0.3s;
-      width: 100%;
-    }
-
-    #local-pause-btn:hover {
-      background: rgba(255, 180, 50, 0.3);
-      border-color: #ffb432;
-      transform: translateY(-2px);
-    }
-
-    #local-pause-btn.paused {
-      background: rgba(76, 175, 80, 0.15);
-      border-color: rgba(76, 175, 80, 0.7);
-      color: #4caf50;
-    }
-
-    #local-pause-btn.paused:hover {
-      background: rgba(76, 175, 80, 0.3);
-      border-color: #4caf50;
-    }
-
-    .desync-banner {
-      display: none;
-      background: rgba(255, 152, 0, 0.15);
-      border: 1px solid rgba(255, 152, 0, 0.5);
-      border-radius: 8px;
-      padding: 10px 16px;
-      margin-top: 12px;
-      color: #ff9800;
-      font-size: 0.9em;
-      text-align: center;
-    }
-
-    .desync-banner.visible {
-      display: block;
-    }
-
-    .force-rejoin-banner {
-      display: none;
-      background: rgba(244, 67, 54, 0.15);
-      border: 1px solid rgba(244, 67, 54, 0.5);
-      border-radius: 8px;
-      padding: 10px 16px;
-      margin-top: 12px;
-      color: #f44336;
-      font-size: 0.9em;
-      text-align: center;
-      animation: pulse 1.5s infinite;
-    }
-
-    .force-rejoin-banner.visible {
-      display: block;
-    }
-
-    /* Volume Panel */
-    .volume-panel {
-      background: rgba(30, 30, 30, 0.95);
-      border: 2px solid rgba(255, 180, 50, 0.5);
-      border-radius: 10px;
-      padding: 20px;
-      margin: 20px 0;
-      backdrop-filter: blur(10px);
-    }
-
-    .volume-panel h3 {
-      margin: 0 0 20px 0;
-      color: #ffb432;
-      text-align: center;
-      font-size: 1.3em;
-    }
-
-    .volume-control {
-      margin-bottom: 20px;
-      padding: 15px;
-      background: rgba(50, 50, 50, 0.5);
-      border-radius: 8px;
-      transition: all 0.3s;
-    }
-
-    .volume-control:hover {
-      background: rgba(60, 60, 60, 0.6);
-    }
-
-    .volume-control.master-volume {
-      background: rgba(255, 180, 50, 0.1);
-      border: 1px solid rgba(255, 180, 50, 0.3);
-    }
-
-    .volume-control label {
+    /* ── APP SHELL ── */
+    #app {
       display: flex;
-      justify-content: space-between;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    /* ── TOP BAR ── */
+    .topbar {
+      display: flex;
       align-items: center;
-      margin-bottom: 10px;
-      font-weight: bold;
+      height: 48px;
+      padding: 0 16px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      gap: 16px;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 10;
+    }
+    .topbar-logo {
+      font-size: 1em;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+      margin-right: 8px;
+    }
+    .topbar-tabs {
+      display: flex;
+      height: 100%;
+      flex: 1;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .topbar-tabs::-webkit-scrollbar { display: none; }
+    .tab {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 14px;
+      height: 100%;
+      font-size: 0.85em;
+      color: var(--text2);
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: color 0.15s;
+      user-select: none;
+    }
+    .tab:hover { color: var(--text); }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab-icon { font-size: 0.9em; opacity: 0.8; }
+
+    .topbar-player {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+    .player-avatar {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--accent-bg);
+      border: 1px solid var(--accent2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75em;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    #header-player-name {
+      font-size: 0.85em;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .conn-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      flex-shrink: 0;
+    }
+    .conn-dot.disconnected { background: var(--red); }
+    .conn-dot.paused-state { background: var(--amber); }
+    #connection-text {
+      font-size: 0.8em;
+      color: var(--text2);
+    }
+
+    /* ── NOW PLAYING STRIP ── */
+    .np-strip {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 7px 16px;
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .np-track { flex: 1; min-width: 0; }
+    .np-name {
+      font-size: 0.85em;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .np-sub {
+      font-size: 0.75em;
+      color: var(--text2);
+    }
+    .np-badge {
+      font-size: 0.72em;
+      font-weight: 600;
+      padding: 2px 9px;
+      border-radius: 20px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .np-badge.live   { background: var(--green-bg); color: var(--green); }
+    .np-badge.paused { background: var(--amber-bg); color: var(--amber); }
+    .np-badge.silent { background: var(--bg2);      color: var(--text3); }
+
+    .np-btn {
+      width: 30px;
+      height: 30px;
+      border: 1px solid var(--border2);
+      border-radius: 6px;
+      background: var(--bg2);
+      color: var(--text);
+      font-size: 0.8em;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: border-color 0.15s;
+      user-select: none;
+    }
+    .np-btn:hover { border-color: var(--border2); background: var(--bg3); }
+    .np-btn.primary {
+      background: var(--accent2);
+      border-color: var(--accent2);
       color: #fff;
     }
+    .np-btn.primary:hover { opacity: 0.85; }
+    .np-btn.amber-btn {
+      background: var(--amber);
+      border-color: var(--amber);
+      color: #fff;
+    }
+    .np-btn.disabled { opacity: 0.3; pointer-events: none; }
 
-    .volume-label {
-      font-size: 1em;
+    /* ── TAB PAGES ── */
+    .tab-pages { flex: 1; overflow: hidden; position: relative; }
+    .tab-page {
+      display: none;
+      height: 100%;
+      overflow-y: auto;
+      padding: 16px;
+    }
+    .tab-page.active { display: block; }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .card-title { font-size: 0.85em; font-weight: 600; }
+    .card-sub   { font-size: 0.78em; color: var(--text2); }
+
+    /* ── PAUSE CARD ── */
+    .pause-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .pause-card.is-paused {
+      border-color: rgba(186,117,23,0.4);
+      background: rgba(186,117,23,0.06);
+    }
+    .pause-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: var(--bg3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2em;
+      flex-shrink: 0;
+      transition: background 0.2s;
+    }
+    .pause-icon.is-paused { background: var(--amber-bg); }
+    .pause-text { flex: 1; }
+    .pause-title { font-size: 0.88em; font-weight: 600; margin-bottom: 2px; }
+    .pause-sub   { font-size: 0.78em; color: var(--text2); }
+    #local-pause-btn {
+      padding: 7px 16px;
+      border-radius: 8px;
+      font-size: 0.82em;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1.5px solid var(--accent2);
+      background: var(--accent-bg);
+      color: var(--accent);
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+    #local-pause-btn:hover { opacity: 0.85; }
+    #local-pause-btn.paused {
+      border-color: var(--green);
+      background: var(--green-bg);
+      color: var(--green);
     }
 
-    .volume-value {
-      color: #ffb432;
-      font-size: 1.1em;
-      min-width: 50px;
-      text-align: right;
+    /* ── BANNERS ── */
+    .banner {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 14px;
+      border-radius: 8px;
+      font-size: 0.82em;
+      margin-bottom: 12px;
+    }
+    .banner.visible { display: flex; }
+    #desync-banner {
+      background: var(--amber-bg);
+      border: 1px solid rgba(186,117,23,0.35);
+      color: var(--amber);
+    }
+    #force-rejoin-banner {
+      background: var(--green-bg);
+      border: 1px solid rgba(29,158,117,0.35);
+      color: var(--green);
     }
 
-    .volume-control input[type="range"] {
-      width: 100%;
+    /* ── NOW PLAYING TRACKS ── */
+    .track-row {
+      display: flex;
+      align-items: center;
+      padding: 10px 14px;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .track-row:last-child { border-bottom: none; }
+    .track-dot {
+      width: 8px;
       height: 8px;
-      border-radius: 5px;
-      background: rgba(100, 100, 100, 0.5);
-      outline: none;
-      -webkit-appearance: none;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .track-dot.playing { background: var(--green); }
+    .track-dot.paused-local { background: var(--amber); }
+    .track-dot.silent { background: var(--text3); }
+    .track-info { flex: 1; min-width: 0; }
+    .track-name {
+      font-size: 0.88em;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .track-name.dim { color: var(--text2); }
+    .track-type  { font-size: 0.76em; color: var(--text3); }
+    .track-gm-vol { font-size: 0.78em; color: var(--text2); white-space: nowrap; }
+    .nothing-playing {
+      text-align: center;
+      padding: 32px 20px;
+      color: var(--text3);
+      font-size: 0.88em;
     }
 
-    .volume-control input[type="range"]::-webkit-slider-thumb {
+    /* ── VOLUME CONTROLS ── */
+    .vol-row {
+      display: flex;
+      align-items: center;
+      padding: 10px 14px;
+      gap: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .vol-row:last-of-type { border-bottom: none; }
+    .vol-label {
+      font-size: 0.82em;
+      color: var(--text2);
+      min-width: 120px;
+    }
+    .vol-label.master { color: var(--text); font-weight: 600; }
+    .vol-row input[type="range"] {
+      flex: 1;
+      height: 4px;
       -webkit-appearance: none;
       appearance: none;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: #ffb432;
+      background: var(--bg3);
+      border-radius: 2px;
+      outline: none;
       cursor: pointer;
-      box-shadow: 0 0 10px rgba(255, 180, 50, 0.5);
-      transition: all 0.3s;
     }
-
-    .volume-control input[type="range"]::-moz-range-thumb {
-      width: 20px;
-      height: 20px;
+    .vol-row input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
       border-radius: 50%;
-      background: #ffb432;
+      background: var(--accent);
       cursor: pointer;
+    }
+    .vol-row input[type="range"]::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent);
       border: none;
-      box-shadow: 0 0 10px rgba(255, 180, 50, 0.5);
-      transition: all 0.3s;
-    }
-
-    .volume-control input[type="range"]:hover::-webkit-slider-thumb {
-      background: #ffc84d;
-      box-shadow: 0 0 15px rgba(255, 180, 50, 0.8);
-      transform: scale(1.1);
-    }
-
-    .volume-control input[type="range"]:hover::-moz-range-thumb {
-      background: #ffc84d;
-      box-shadow: 0 0 15px rgba(255, 180, 50, 0.8);
-      transform: scale(1.1);
-    }
-
-    .volume-control small {
-      display: block;
-      color: rgba(255, 255, 255, 0.6);
-      font-size: 0.85em;
-      margin-top: 5px;
-    }
-
-    .btn-secondary {
-      width: 100%;
-      margin-top: 10px;
-      padding: 12px;
-      background: rgba(100, 100, 100, 0.3);
-      color: #fff;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 5px;
       cursor: pointer;
-      transition: all 0.3s;
-      font-size: 1em;
     }
-
-    .btn-secondary:hover {
-      background: rgba(100, 100, 100, 0.5);
-      border-color: #ffb432;
-      transform: translateY(-2px);
+    .vol-pct {
+      font-size: 0.82em;
+      font-weight: 600;
+      color: var(--accent);
+      min-width: 36px;
+      text-align: right;
     }
-
-    /* Now Playing */
-    .now-playing {
-      background: rgba(30, 30, 30, 0.8);
-      border: 2px solid rgba(255, 180, 50, 0.3);
-      border-radius: 10px;
-      padding: 20px;
-      margin: 20px 0;
+    .vol-pct.dim { color: var(--text2); }
+    .reset-row { padding: 10px 14px; }
+    .reset-btn {
+      font-size: 0.8em;
+      padding: 6px 14px;
+      border: 1px solid var(--border2);
+      border-radius: 6px;
+      background: var(--bg3);
+      color: var(--text2);
+      cursor: pointer;
+      transition: border-color 0.15s;
     }
+    .reset-btn:hover { border-color: var(--border2); color: var(--text); }
 
-    .now-playing h3 {
-      color: #ffb432;
-      margin-bottom: 15px;
-      font-size: 1.2em;
+    /* ── PLACEHOLDER TABS ── */
+    .coming-soon {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text3);
     }
+    .coming-soon-icon { font-size: 2.5em; margin-bottom: 12px; }
+    .coming-soon h3 { font-size: 1em; font-weight: 500; color: var(--text2); margin-bottom: 6px; }
+    .coming-soon p  { font-size: 0.85em; }
 
-    .track-item {
-      background: rgba(50, 50, 50, 0.5);
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 15px;
-    }
-
-    .track-indicator {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: #4caf50;
-      box-shadow: 0 0 10px #4caf50;
-      animation: pulse 1.5s infinite;
+    /* ── FOOTER ── */
+    .app-footer {
+      padding: 10px 16px;
+      font-size: 0.75em;
+      color: var(--text3);
+      text-align: center;
+      border-top: 1px solid var(--border);
+      background: var(--bg2);
       flex-shrink: 0;
     }
 
-    .track-info {
-      flex: 1;
+    /* ── MOBILE BOTTOM NAV ── */
+    @media (max-width: 600px) {
+      .topbar-tabs { display: none; }
+      .app-footer  { display: none; }
+      .bottom-nav {
+        display: flex;
+        border-top: 1px solid var(--border);
+        background: var(--bg2);
+        flex-shrink: 0;
+      }
+      .bottom-nav-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        padding: 7px 4px 5px;
+        font-size: 0.68em;
+        color: var(--text3);
+        cursor: pointer;
+        user-select: none;
+      }
+      .bottom-nav-item.active { color: var(--accent); }
+      .bottom-nav-icon { font-size: 1.1em; }
+      .bottom-nav-dot {
+        width: 3px;
+        height: 3px;
+        border-radius: 50%;
+        background: var(--accent);
+        margin-bottom: 1px;
+      }
+    }
+    @media (min-width: 601px) {
+      .bottom-nav { display: none; }
     }
 
-    .track-name {
-      font-weight: bold;
-      margin-bottom: 5px;
-    }
-
-    .track-type {
-      color: rgba(255, 255, 255, 0.6);
-      font-size: 0.9em;
-    }
-
-    .dm-volume {
-      color: #ffb432;
-      font-size: 0.9em;
-    }
-
-    .nothing-playing {
-      text-align: center;
-      padding: 40px;
-      color: rgba(255, 255, 255, 0.5);
-    }
-
-    .nothing-playing-icon {
-      font-size: 3em;
-      margin-bottom: 10px;
-    }
-
-    /* Info tooltip */
-    .info-tooltip {
-      background: rgba(255, 180, 50, 0.1);
-      border: 1px solid rgba(255, 180, 50, 0.3);
-      border-radius: 8px;
-      padding: 15px;
-      margin: 20px 0;
-      color: rgba(255, 255, 255, 0.8);
-      font-size: 0.95em;
-      line-height: 1.5;
-    }
-
-    .info-tooltip strong {
-      color: #ffb432;
-    }
-
-    footer {
-      text-align: center;
-      margin-top: 40px;
-      padding: 20px;
-      color: rgba(255, 255, 255, 0.5);
-      font-size: 0.9em;
-    }
+    /* ── PULSE ANIMATION ── */
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.45} }
+    .pulse { animation: pulse 2s infinite; }
   </style>
 </head>
 <body>
@@ -483,112 +530,299 @@
   <!-- Login Overlay -->
   <div id="login-overlay">
     <div class="login-card">
-      <div class="login-icon">🎲</div>
-      <h2>Wildlands Soundboard</h2>
+      <div class="login-icon">&#127922;</div>
+      <h2>Eldoria Soundboard</h2>
       <p>Enter your character or player name to join the session.</p>
       <input type="text" id="player-name-input" placeholder="Your name or PC name" maxlength="32" autocomplete="off" />
       <div class="login-error" id="login-error"></div>
-      <button id="login-btn" onclick="submitLogin()">Join Session</button>
+      <button onclick="submitLogin()">Join Session</button>
     </div>
   </div>
 
-  <div class="container">
+  <!-- App Shell -->
+  <div id="app">
 
-    <header>
-      <h1>🎧 Wildlands Soundboard</h1>
-      <p class="subtitle">Player View — <span class="player-name-badge" id="header-player-name"></span></p>
-      <div class="status">
-        <div class="status-indicator" id="connection-status"></div>
-        <span id="connection-text">Connecting...</span>
-      </div>
-    </header>
-
-    <!-- Local Pause Control -->
-    <div class="local-pause-panel">
-      <h3>🎧 Your Playback</h3>
-      <p>Pause your audio without affecting other players. Resume to snap back to live.</p>
-      <button id="local-pause-btn" onclick="toggleLocalPause()">⏸ Pause My Audio</button>
-      <div class="desync-banner" id="desync-banner">
-        ⏸ Your audio is paused. Others are still listening. Hit Resume to rejoin.
-      </div>
-      <div class="force-rejoin-banner" id="force-rejoin-banner">
-        🎵 GM changed tracks — you've been synced back to live!
-      </div>
-    </div>
-
-    <!-- Volume Controls -->
-    <div id="player-volume-panel" class="volume-panel">
-      <h3>🔊 Your Volume Controls</h3>
-
-      <div class="info-tooltip">
-        <strong>💡 How it works:</strong> Your GM controls what plays and when.
-        You control how loud it is for you! Adjust the sliders below to your comfort level.
-      </div>
-
-      <div class="volume-control master-volume">
-        <label>
-          <span class="volume-label">🎚️ Master Volume</span>
-          <span class="volume-value" id="master-value">70%</span>
-        </label>
-        <input type="range" id="volume-master" min="0" max="100" value="70" step="1">
-        <small>Controls all audio from your GM</small>
-      </div>
-
-      <div class="volume-control">
-        <label>
-          <span class="volume-label">🎵 Background Music</span>
-          <span class="volume-value" id="bgm-value">100%</span>
-        </label>
-        <input type="range" id="volume-bgm" min="0" max="100" value="100" step="1">
-        <small>Adjust music tracks independently</small>
-      </div>
-
-      <div class="volume-control">
-        <label>
-          <span class="volume-label">🌊 Ambience</span>
-          <span class="volume-value" id="ambience-value">100%</span>
-        </label>
-        <input type="range" id="volume-ambience" min="0" max="100" value="100" step="1">
-        <small>Adjust ambient sounds independently</small>
-      </div>
-
-      <div class="volume-control">
-        <label>
-          <span class="volume-label">⚡ Sound Effects</span>
-          <span class="volume-value" id="sfx-value">100%</span>
-        </label>
-        <input type="range" id="volume-sfx" min="0" max="100" value="100" step="1">
-        <small>Adjust sound effects independently</small>
-      </div>
-
-      <button id="reset-volumes" class="btn-secondary">Reset All to Defaults</button>
-    </div>
-
-    <!-- Now Playing -->
-    <div class="now-playing">
-      <h3>📻 Now Playing</h3>
-      <div id="now-playing-content">
-        <div class="nothing-playing">
-          <div class="nothing-playing-icon">🎵</div>
-          <p>Waiting for your GM to start audio...</p>
+    <!-- Top bar -->
+    <div class="topbar">
+      <span class="topbar-logo">Eldoria</span>
+      <div class="topbar-tabs">
+        <div class="tab active" data-tab="audio" onclick="switchTab('audio')">
+          <span class="tab-icon">&#9835;</span> Audio
+        </div>
+        <div class="tab" data-tab="dice" onclick="switchTab('dice')">
+          <span class="tab-icon">&#9861;</span> Dice
+        </div>
+        <div class="tab" data-tab="map" onclick="switchTab('map')">
+          <span class="tab-icon">&#9633;</span> Grid map
+        </div>
+        <div class="tab" data-tab="overworld" onclick="switchTab('overworld')">
+          <span class="tab-icon">&#11043;</span> Overworld
+        </div>
+        <div class="tab" data-tab="sheet" onclick="switchTab('sheet')">
+          <span class="tab-icon">&#128100;</span> Sheet
         </div>
       </div>
+      <div class="topbar-player">
+        <div class="player-avatar" id="player-avatar">?</div>
+        <span id="header-player-name"></span>
+        <div class="conn-dot" id="connection-status"></div>
+        <span id="connection-text">Connecting...</span>
+      </div>
     </div>
 
-    <footer>
-      <p>🎲 Wildlands Campaign Audio System</p>
-      <p>Volume controls are saved to your browser</p>
-    </footer>
+    <!-- Now playing strip — always visible -->
+    <div class="np-strip">
+      <div class="np-track">
+        <div class="np-name" id="np-track-name">Nothing playing</div>
+        <div class="np-sub"  id="np-track-sub">Waiting for GM</div>
+      </div>
+      <span class="np-badge silent" id="np-badge">Idle</span>
+      <div class="np-btn disabled" id="np-prev" onclick="npPrev()" title="Previous">&#9664;&#9664;</div>
+      <div class="np-btn primary"  id="np-playpause" onclick="toggleLocalPause()" title="Pause / Resume">&#9646;&#9646;</div>
+      <div class="np-btn disabled" id="np-next" onclick="npNext()" title="Next">&#9654;&#9654;</div>
+    </div>
 
-  </div>
+    <!-- Tab pages -->
+    <div class="tab-pages">
 
-  <!-- Audio Elements -->
+      <!-- AUDIO TAB -->
+      <div class="tab-page active" id="tab-audio">
+
+        <!-- Desync / force-rejoin banners -->
+        <div class="banner" id="desync-banner">
+          <span>&#9208;</span>
+          <span>Your audio is paused. Others are still listening. Hit Resume to rejoin at the live position.</span>
+        </div>
+        <div class="banner" id="force-rejoin-banner">
+          <span>&#9835;</span>
+          <span>GM changed tracks — you've been synced back to live automatically.</span>
+        </div>
+
+        <!-- Pause control card -->
+        <div class="pause-card" id="pause-card">
+          <div class="pause-icon" id="pause-icon">&#9646;&#9646;</div>
+          <div class="pause-text">
+            <div class="pause-title" id="pause-title">Your playback</div>
+            <div class="pause-sub" id="pause-sub">Pause locally without affecting other players. Resume to snap back to the live position.</div>
+          </div>
+          <button id="local-pause-btn" onclick="toggleLocalPause()">Pause my audio</button>
+        </div>
+
+        <!-- Now playing detail -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Now playing</span>
+            <span class="card-sub" id="np-detail-sub">GM-controlled</span>
+          </div>
+          <div id="now-playing-content">
+            <div class="nothing-playing">Waiting for your GM to start audio&hellip;</div>
+          </div>
+        </div>
+
+        <!-- Volume controls -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Your volume</span>
+            <span class="card-sub">Saved to your browser</span>
+          </div>
+          <div class="vol-row">
+            <span class="vol-label master">Master</span>
+            <input type="range" id="volume-master" min="0" max="100" value="70" step="1">
+            <span class="vol-pct" id="master-value">70%</span>
+          </div>
+          <div class="vol-row">
+            <span class="vol-label">Background music</span>
+            <input type="range" id="volume-bgm" min="0" max="100" value="100" step="1">
+            <span class="vol-pct dim" id="bgm-value">100%</span>
+          </div>
+          <div class="vol-row">
+            <span class="vol-label">Ambience</span>
+            <input type="range" id="volume-ambience" min="0" max="100" value="100" step="1">
+            <span class="vol-pct dim" id="ambience-value">100%</span>
+          </div>
+          <div class="vol-row">
+            <span class="vol-label">Sound effects</span>
+            <input type="range" id="volume-sfx" min="0" max="100" value="100" step="1">
+            <span class="vol-pct dim" id="sfx-value">100%</span>
+          </div>
+          <div class="reset-row">
+            <button class="reset-btn" id="reset-volumes">Reset to defaults</button>
+          </div>
+        </div>
+
+      </div><!-- /tab-audio -->
+
+      <!-- DICE TAB (placeholder) -->
+      <div class="tab-page" id="tab-dice">
+        <div class="coming-soon">
+          <div class="coming-soon-icon">&#9861;</div>
+          <h3>Dice roller</h3>
+          <p>Coming soon &mdash; PF2e dice pools, modifier breakdown, live feed.</p>
+        </div>
+      </div>
+
+      <!-- MAP TAB (placeholder) -->
+      <div class="tab-page" id="tab-map">
+        <div class="coming-soon">
+          <div class="coming-soon-icon">&#9633;</div>
+          <h3>Grid map</h3>
+          <p>Coming soon &mdash; combat encounters, fog of war, token movement.</p>
+        </div>
+      </div>
+
+      <!-- OVERWORLD TAB (placeholder) -->
+      <div class="tab-page" id="tab-overworld">
+        <div class="coming-soon">
+          <div class="coming-soon-icon">&#11043;</div>
+          <h3>Overworld map</h3>
+          <p>Coming soon &mdash; hex terrain, exploration, revealed regions.</p>
+        </div>
+      </div>
+
+      <!-- SHEET TAB (placeholder) -->
+      <div class="tab-page" id="tab-sheet">
+        <div class="coming-soon">
+          <div class="coming-soon-icon">&#128100;</div>
+          <h3>Character sheet</h3>
+          <p>Coming soon &mdash; Pathbuilder import, quick roll shortcuts.</p>
+        </div>
+      </div>
+
+    </div><!-- /tab-pages -->
+
+    <!-- Mobile bottom nav -->
+    <div class="bottom-nav">
+      <div class="bottom-nav-item active" id="bn-audio" onclick="switchTab('audio')">
+        <div class="bottom-nav-dot" id="bn-dot-audio"></div>
+        <span class="bottom-nav-icon">&#9835;</span>
+        <span>Audio</span>
+      </div>
+      <div class="bottom-nav-item" id="bn-dice" onclick="switchTab('dice')">
+        <span class="bottom-nav-icon">&#9861;</span>
+        <span>Dice</span>
+      </div>
+      <div class="bottom-nav-item" id="bn-map" onclick="switchTab('map')">
+        <span class="bottom-nav-icon">&#9633;</span>
+        <span>Map</span>
+      </div>
+      <div class="bottom-nav-item" id="bn-overworld" onclick="switchTab('overworld')">
+        <span class="bottom-nav-icon">&#11043;</span>
+        <span>World</span>
+      </div>
+      <div class="bottom-nav-item" id="bn-sheet" onclick="switchTab('sheet')">
+        <span class="bottom-nav-icon">&#128100;</span>
+        <span>Sheet</span>
+      </div>
+    </div>
+
+    <div class="app-footer">Eldoria Campaign &middot; volume settings saved locally</div>
+
+  </div><!-- /app -->
+
+  <!-- Audio elements (unchanged — player.js references these by ID) -->
   <audio id="bgm-audio" loop></audio>
   <audio id="ambience-audio" loop></audio>
 
-  <!-- Scripts: Socket.IO first, then app logic -->
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/player.js"></script>
+  <script>
+    // Tab switching — works for both top nav and mobile bottom nav
+    function switchTab(name) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+      document.querySelectorAll('.tab-page').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
+      document.querySelectorAll('.bottom-nav-item').forEach(b => {
+        const active = b.id === 'bn-' + name;
+        b.classList.toggle('active', active);
+      });
+      document.querySelectorAll('.bottom-nav-dot').forEach(d => d.remove());
+      const activeBn = document.getElementById('bn-' + name);
+      if (activeBn) {
+        const dot = document.createElement('div');
+        dot.className = 'bottom-nav-dot';
+        activeBn.prepend(dot);
+      }
+    }
 
+    // Now-playing strip helpers called by player.js via updateNowPlaying()
+    // These are called after the DOM is updated so the strip stays in sync.
+    function updateNowPlayingStrip(bgm, ambience, localPaused) {
+      const nameEl  = document.getElementById('np-track-name');
+      const subEl   = document.getElementById('np-track-sub');
+      const badge   = document.getElementById('np-badge');
+      const ppBtn   = document.getElementById('np-playpause');
+      const prevBtn = document.getElementById('np-prev');
+      const nextBtn = document.getElementById('np-next');
+
+      const track = bgm || ambience;
+
+      if (!track || !track.track) {
+        nameEl.textContent = 'Nothing playing';
+        subEl.textContent  = 'Waiting for GM';
+        badge.textContent  = 'Idle';
+        badge.className    = 'np-badge silent';
+        ppBtn.className    = 'np-btn primary';
+        ppBtn.innerHTML    = '&#9646;&#9646;';
+        prevBtn.classList.add('disabled');
+        nextBtn.classList.add('disabled');
+        return;
+      }
+
+      const tname = track.track.name || track.track.filename || 'Unknown track';
+      const ttype = bgm ? 'BGM' : 'Ambience';
+      nameEl.textContent = tname;
+      subEl.textContent  = ttype + (localPaused ? ' \u00b7 paused locally' : ' \u00b7 live');
+
+      if (localPaused) {
+        badge.textContent = 'Paused';
+        badge.className   = 'np-badge paused';
+        ppBtn.className   = 'np-btn amber-btn';
+        ppBtn.innerHTML   = '&#9654;';
+      } else {
+        badge.textContent = 'Live';
+        badge.className   = 'np-badge live';
+        ppBtn.className   = 'np-btn primary';
+        ppBtn.innerHTML   = '&#9646;&#9646;';
+      }
+      prevBtn.classList.remove('disabled');
+      nextBtn.classList.remove('disabled');
+    }
+
+    // Pause card UI sync — called from player.js pauseLocal/resumeLocal
+    function syncPauseCardUI(paused) {
+      const card      = document.getElementById('pause-card');
+      const icon      = document.getElementById('pause-icon');
+      const title     = document.getElementById('pause-title');
+      const sub       = document.getElementById('pause-sub');
+      const btn       = document.getElementById('local-pause-btn');
+      const connDot   = document.getElementById('connection-status');
+      const connText  = document.getElementById('connection-text');
+
+      card.classList.toggle('is-paused', paused);
+      icon.classList.toggle('is-paused', paused);
+
+      if (paused) {
+        icon.innerHTML   = '&#9654;';
+        title.textContent = 'Your audio is paused';
+        sub.textContent   = 'Resume to snap back to the live position. GM track changes will auto-resume you.';
+        connDot.classList.add('paused-state');
+        connText.textContent = 'Paused';
+      } else {
+        icon.innerHTML   = '&#9646;&#9646;';
+        title.textContent = 'Your playback';
+        sub.textContent   = 'Pause locally without affecting other players. Resume to snap back to the live position.';
+        connDot.classList.remove('paused-state');
+        connText.textContent = 'Connected to GM';
+      }
+    }
+
+    // Stub nav controls (GM controls track changes, not players)
+    function npPrev() {}
+    function npNext() {}
+
+    // Set avatar initials after login
+    function setAvatarInitial(name) {
+      document.getElementById('player-avatar').textContent = name.charAt(0).toUpperCase();
+    }
+  </script>
+  <script src="/player.js"></script>
 </body>
 </html>

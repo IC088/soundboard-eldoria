@@ -15,6 +15,9 @@ COPY src/ ./
 RUN mkdir -p /app/audio/bgm /app/audio/ambience /app/audio/sfx && \
     chmod -R 777 /app/audio
 
+RUN mkdir -p /app/public/assets/dice-box && \
+    cp -rv /app/node_modules/@3d-dice/dice-box/dist/assets/* /app/public/assets/dice-box/
+
 # Expose port
 EXPOSE 3000
 

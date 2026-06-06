@@ -9,9 +9,9 @@ services:
       - ./audio/bgm:/app/audio/bgm
       - ./audio/ambience:/app/audio/ambience
       - ./audio/sfx:/app/audio/sfx
-    environment:
-      - NODE_ENV=production
-      - PORT=3000
+      - ./data:/app/data # Persist user data (e.g., playlists, settings, etc.)
+    env_file:
+      - .env
     restart: unless-stopped
     # For local network access (players on same WiFi)
     # network_mode: host

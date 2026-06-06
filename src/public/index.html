@@ -80,6 +80,24 @@
     }
     .p-chip.paused { background: var(--amber-bg); border-color: var(--amber); color: var(--amber); }
 
+    /* ── GM USER AREA ── */
+    .gm-user {
+      display: flex; align-items: center; gap: 8px;
+      padding-left: 12px; border-left: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .gm-username {
+      font-size: 0.82em; font-weight: 600; color: var(--accent);
+      white-space: nowrap;
+    }
+    .logout-btn {
+      background: none; border: 1px solid var(--border2); border-radius: 5px;
+      color: var(--text3); font-size: 0.75em; padding: 3px 9px;
+      cursor: pointer; transition: color 0.15s, border-color 0.15s;
+      font-family: inherit;
+    }
+    .logout-btn:hover { color: var(--red); border-color: var(--red); }
+
     /* ── SHELL ── */
     #app { display: flex; flex-direction: column; height: 100vh; }
     .shell { display: flex; flex: 1; overflow: hidden; }
@@ -418,10 +436,7 @@
     .hp-adj-label { font-size: 0.72em; color: var(--text3); flex: 1; }
 
     /* ── RIGHT PANEL CONTENT ── */
-    /* dice feed panel (always visible) */
     .rp-dice-feed { max-height: 300px; overflow-y: auto; background: var(--bg3); border-radius: 8px; border: 1px solid var(--border); }
-
-    /* party mini tracker in rp */
     .rp-pc-row { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-bottom: 1px solid var(--border); }
     .rp-pc-row:last-child { border-bottom: none; }
     .rp-avatar { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.72em; font-weight: 700; flex-shrink: 0; }
@@ -498,6 +513,13 @@
       <div class="conn-dot off" id="conn-dot"></div>
       <span id="conn-text" style="color:var(--text2);">Connecting...</span>
       <div id="player-chips"></div>
+    </div>
+    <!-- ── GM USER AREA ── -->
+    <div class="gm-user">
+      <span class="gm-username" id="gm-username"></span>
+      <form method="POST" action="/logout" style="display:inline;">
+        <button type="submit" class="logout-btn">Logout</button>
+      </form>
     </div>
   </div>
 
@@ -1073,7 +1095,6 @@ function renderLibrary() {
       </div>
     </div>`).join('') || '<div style="padding:14px;font-size:0.8em;color:var(--text3);text-align:center;">No tracks found</div>';
 
-  // drag-to-drop-zone
   document.querySelectorAll('.lib-track').forEach(el => {
     el.addEventListener('dragstart', e => {
       e.dataTransfer.setData('text/plain', JSON.stringify({ url: el.dataset.url, name: el.dataset.name }));
@@ -1090,7 +1111,6 @@ function renderSfxPads() {
   document.getElementById('sfx-pads').innerHTML = pads.join('');
 }
 
-// Drop zones
 document.querySelectorAll('[data-channel]').forEach(zone => {
   zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
   zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
@@ -1227,7 +1247,6 @@ function playSfx(url, name) {
   });
 }
 
-// Upload
 function openUpload() { document.getElementById('upload-modal').classList.add('open'); }
 function closeUpload() { document.getElementById('upload-modal').classList.remove('open'); }
 function triggerUpload(cat) {
@@ -1295,7 +1314,6 @@ function removeGmDie(sides) { gmDice.pool = gmDice.pool.filter(p => p.sides !== 
 function renderGmPool() {
   const el = document.getElementById('gm-pool-list');
   if (!el) return;
-  // Update die buttons
   [4,6,8,10,12,20,100].forEach(s => {
     const entry = gmDice.pool.find(p=>p.sides===s);
     const btn = document.querySelector(`.die-btn[onclick="addDie(${s})"]`);
@@ -1350,7 +1368,6 @@ async function gmRoll() {
 
   updateGmModTotal();
 
-  // Cosmetic 3D animation
   if (gmDiceBoxReady && gmDiceBox) {
     try {
       await gmDiceBox.clearDice();
@@ -1372,7 +1389,6 @@ async function gmRoll() {
 
 function renderGmFeed() { renderRPDiceFeed(); }
 
-// Show own GM result in tray (server echoes it back)
 socket.on('dice:result', (r) => {
   if (r.roller !== 'GM' && r.role !== 'dm') return;
   if (r.redacted) return;
@@ -1428,7 +1444,6 @@ function setTerrain(el) {
   el.classList.add('active');
 }
 
-// Flat-top hex math
 function hexToPixel(col, row, size) {
   const w = size * 2, h = Math.sqrt(3) * size;
   const x = col * (w * 0.75) + size;
@@ -1474,7 +1489,6 @@ function drawOw() {
     }
   }
 
-  // Party position
   if (owMap.partyPos) {
     const { x, y } = hexToPixel(owMap.partyPos.col, owMap.partyPos.row, size);
     owCtx.beginPath();
@@ -1483,7 +1497,6 @@ function drawOw() {
     owCtx.fill();
   }
 
-  // Locations
   owMap.locations.forEach(loc => {
     const { x, y } = hexToPixel(loc.col, loc.row, size);
     owCtx.beginPath();
@@ -1619,20 +1632,17 @@ function drawBattle() {
   const gs = bMap.gridSize;
   bCtx.clearRect(0, 0, W, H);
 
-  // Grid
   bCtx.strokeStyle = 'rgba(255,255,255,0.08)';
   bCtx.lineWidth = 0.5;
   for (let x = 0; x < W; x += gs) { bCtx.beginPath(); bCtx.moveTo(x,0); bCtx.lineTo(x,H); bCtx.stroke(); }
   for (let y = 0; y < H; y += gs) { bCtx.beginPath(); bCtx.moveTo(0,y); bCtx.lineTo(W,y); bCtx.stroke(); }
 
-  // Fog cells
   bCtx.fillStyle = 'rgba(0,0,0,0.7)';
   bMap.fogCells.forEach(key => {
     const [c, r] = key.split(',').map(Number);
     bCtx.fillRect(c*gs, r*gs, gs, gs);
   });
 
-  // Tokens
   bMap.tokens.forEach(tok => {
     const cx = tok.col * gs + gs/2, cy = tok.row * gs + gs/2, r = gs * 0.38;
     bCtx.beginPath(); bCtx.arc(cx, cy, r, 0, Math.PI*2);
@@ -1816,6 +1826,15 @@ function rollInitiative() { showToast('Roll initiative: coming soon'); }
 loadTracks();
 buildRightPanel('audio');
 renderParty();
+
+// Fetch and display logged-in GM username
+fetch('/api/me')
+  .then(r => r.json())
+  .then(data => {
+    const el = document.getElementById('gm-username');
+    if (el && data.username) el.textContent = data.username;
+  })
+  .catch(() => {});
 </script>
 </body>
 </html>

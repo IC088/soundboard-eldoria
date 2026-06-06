@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eldoria — GM Login</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0d12;
+      --bg2:       #16161f;
+      --bg3:       #1e1e2a;
+      --border:    rgba(255,255,255,0.08);
+      --border2:   rgba(255,255,255,0.14);
+      --text:      #e8e6f0;
+      --text2:     #9896a8;
+      --text3:     #5e5c6e;
+      --accent:    #7c6fd4;
+      --accent2:   #534ab7;
+      --accent-bg: #1e1a38;
+      --green:     #1d9e75;
+      --red:       #e24b4a;
+      --red-bg:    #2a0f0f;
+      --gold:      #e0af68;
+      --gold-dim:  #9a7540;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.5;
+      overflow: hidden;
+    }
+
+    /* ── Animated background ── */
+    .bg-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .bg-layer::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 80%, rgba(83,74,183,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 20%, rgba(224,175,104,0.07) 0%, transparent 55%),
+        radial-gradient(ellipse 40% 40% at 50% 50%, rgba(29,158,117,0.04) 0%, transparent 60%);
+      animation: bgPulse 8s ease-in-out infinite alternate;
+    }
+
+    @keyframes bgPulse {
+      0%   { opacity: 0.6; transform: scale(1); }
+      100% { opacity: 1;   transform: scale(1.04); }
+    }
+
+    /* ── Stars ── */
+    .stars {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .star {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.6);
+      animation: twinkle var(--dur, 3s) ease-in-out infinite var(--delay, 0s) alternate;
+    }
+    @keyframes twinkle {
+      0%   { opacity: 0.1; transform: scale(0.8); }
+      100% { opacity: 0.8; transform: scale(1.2); }
+    }
+
+    /* ── Layout ── */
+    .page {
+      position: relative;
+      z-index: 1;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    /* ── Login card ── */
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--border2);
+      border-radius: 20px;
+      padding: 48px 44px 44px;
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+      position: relative;
+      box-shadow:
+        0 0 0 1px rgba(83,74,183,0.15),
+        0 24px 64px rgba(0,0,0,0.6),
+        0 0 80px rgba(83,74,183,0.08);
+      animation: cardIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(20px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0)    scale(1);    }
+    }
+
+    /* Gold top accent line */
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 20%; right: 20%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      border-radius: 0 0 4px 4px;
+    }
+
+    /* ── Header ── */
+    .sigil {
+      font-size: 2.6em;
+      margin-bottom: 16px;
+      display: block;
+      filter: drop-shadow(0 0 12px rgba(224,175,104,0.4));
+      animation: sigilFloat 4s ease-in-out infinite alternate;
+    }
+    @keyframes sigilFloat {
+      0%   { transform: translateY(0);    filter: drop-shadow(0 0 10px rgba(224,175,104,0.3)); }
+      100% { transform: translateY(-4px); filter: drop-shadow(0 0 18px rgba(224,175,104,0.6)); }
+    }
+
+    .title {
+      font-size: 1.6em;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 0.03em;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      color: var(--text3);
+      font-size: 0.85em;
+      margin-bottom: 36px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* ── Form ── */
+    .field {
+      margin-bottom: 14px;
+      text-align: left;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.75em;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text3);
+      margin-bottom: 6px;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 11px 14px;
+      background: var(--bg3);
+      border: 1px solid var(--border2);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.95em;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .field input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(124,111,212,0.15);
+    }
+
+    .field input::placeholder { color: var(--text3); }
+
+    /* ── Error ── */
+    .error-box {
+      display: none;
+      background: var(--red-bg);
+      border: 1px solid rgba(226,75,74,0.3);
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 16px;
+      color: var(--red);
+      font-size: 0.85em;
+      text-align: left;
+      animation: shake 0.4s ease;
+    }
+    .error-box.visible { display: block; }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%       { transform: translateX(-6px); }
+      40%       { transform: translateX(6px); }
+      60%       { transform: translateX(-4px); }
+      80%       { transform: translateX(4px); }
+    }
+
+    /* ── Submit button ── */
+    .btn-login {
+      width: 100%;
+      padding: 13px;
+      margin-top: 8px;
+      background: var(--accent2);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 0.95em;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s, box-shadow 0.2s;
+      box-shadow: 0 4px 16px rgba(83,74,183,0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-login:hover {
+      opacity: 0.9;
+      box-shadow: 0 6px 24px rgba(83,74,183,0.45);
+    }
+
+    .btn-login:active { transform: scale(0.98); }
+
+    .btn-login:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Shimmer effect on button */
+    .btn-login::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 60%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+      transform: skewX(-20deg);
+      transition: left 0.5s;
+    }
+    .btn-login:hover::after { left: 150%; }
+
+    /* ── Footer ── */
+    .footer {
+      margin-top: 28px;
+      color: var(--text3);
+      font-size: 0.75em;
+      letter-spacing: 0.04em;
+    }
+
+    .footer span {
+      color: var(--gold-dim);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient background -->
+  <div class="bg-layer"></div>
+  <div class="stars" id="stars"></div>
+
+  <div class="page">
+    <div class="card">
+      <span class="sigil">🎼</span>
+      <div class="title">Bards of the Realm</div>
+      <div class="subtitle">Game Master Access</div>
+
+      <!-- Error message (shown server-side via query param) -->
+      <div class="error-box" id="error-box">
+        ⚠ Invalid username or password.
+      </div>
+
+      <form method="POST" action="/login" id="login-form">
+        <div class="field">
+          <label for="username">Username</label>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            placeholder="your name"
+            maxlength="32"
+            autocomplete="username"
+            autocapitalize="none"
+            spellcheck="false"
+            required
+          />
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            placeholder="••••••••"
+            maxlength="128"
+            autocomplete="current-password"
+            required
+          />
+        </div>
+
+        <button type="submit" class="btn-login" id="submit-btn">
+          Enter the Sanctum
+        </button>
+      </form>
+
+      <div class="footer">
+        Eldoria Campaign &middot; <span>GM Portal</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ── Show error if redirected back with ?error=1 ──
+    if (new URLSearchParams(location.search).get('error')) {
+      document.getElementById('error-box').classList.add('visible');
+    }
+
+    // ── Pre-fill username if redirected back ──
+    const savedUser = new URLSearchParams(location.search).get('username');
+    if (savedUser) document.getElementById('username').value = savedUser;
+
+    // ── Loading state on submit ──
+    document.getElementById('login-form').addEventListener('submit', () => {
+      const btn = document.getElementById('submit-btn');
+      btn.disabled = true;
+      btn.textContent = 'Entering…';
+    });
+
+    // ── Generate stars ──
+    const starsEl = document.getElementById('stars');
+    for (let i = 0; i < 80; i++) {
+      const s = document.createElement('div');
+      s.className = 'star';
+      const size = Math.random() * 2 + 0.5;
+      s.style.cssText = `
+        left: ${Math.random() * 100}%;
+        top: ${Math.random() * 100}%;
+        width: ${size}px;
+        height: ${size}px;
+        --dur: ${2 + Math.random() * 4}s;
+        --delay: ${-Math.random() * 5}s;
+        opacity: ${Math.random() * 0.4 + 0.1};
+      `;
+      starsEl.appendChild(s);
+    }
+
+    // ── Focus username on load ──
+    window.addEventListener('DOMContentLoaded', () => {
+      const u = document.getElementById('username');
+      if (!u.value) u.focus();
+      else document.getElementById('password').focus();
+    });
+  </script>
+</body>
+</html>

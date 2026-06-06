@@ -477,6 +477,56 @@
     .toast { background: var(--bg2); border: 1px solid var(--border2); border-radius: 8px; padding: 10px 16px; font-size: 0.85em; animation: slideIn 0.25s ease; }
     @keyframes slideIn { from { transform: translateX(60px); opacity: 0; } to { transform: none; opacity: 1; } }
 
+    /* ── PLAYLIST SIDEBAR ── */
+    .pl-controls-bar { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; background: var(--bg3); }
+    .pl-np-info { min-width: 0; }
+    .pl-np-name { font-size: 0.82em; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+    .pl-np-sub  { font-size: 0.72em; color: var(--text3); margin-top: 1px; }
+    .pl-btns    { display: flex; gap: 5px; }
+    .pl-tr-btn  { flex: 1; height: 28px; border-radius: 6px; border: 1px solid var(--border2); background: var(--bg2); color: var(--text); cursor: pointer; font-size: 0.78em; display: flex; align-items: center; justify-content: center; }
+    .pl-tr-btn:hover { border-color: var(--accent2); color: var(--accent); }
+    .pl-tr-btn.active { background: var(--accent-bg); border-color: var(--accent2); color: var(--accent); }
+    .pl-track { display: flex; align-items: center; gap: 6px; padding: 7px 10px; cursor: pointer; border-left: 2px solid transparent; transition: background 0.12s; }
+    .pl-track:hover { background: var(--bg3); }
+    .pl-track.active { background: var(--accent-bg); border-left-color: var(--accent2); }
+    .pl-track.drag-over { background: var(--accent-bg); border-left-color: var(--accent2); opacity: 0.6; }
+    .pl-track-drag { color: var(--text3); font-size: 0.75em; cursor: grab; user-select: none; flex-shrink: 0; }
+    .pl-track-drag:active { cursor: grabbing; }
+    .pl-track-idx  { font-size: 0.7em; color: var(--text3); min-width: 16px; text-align: right; flex-shrink: 0; }
+    .pl-track-name { flex: 1; font-size: 0.82em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pl-track-del  { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 0.88em; padding: 1px 4px; border-radius: 4px; flex-shrink: 0; opacity: 0; }
+    .pl-track:hover .pl-track-del { opacity: 1; }
+    .pl-track-del:hover { color: var(--red); background: var(--red-bg); }
+    .pl-empty { padding: 24px 12px; text-align: center; color: var(--text3); font-size: 0.8em; line-height: 1.6; }
+    .pl-sidebar-footer { padding: 10px 10px; border-top: 1px solid var(--border); flex-shrink: 0; }
+    .pl-sidebar-footer .btn { width: 100%; justify-content: center; }
+
+    /* ── ADD TRACK SLIDE-OVER ── */
+    .atm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 300; display: none; }
+    .atm-overlay.open { display: block; }
+    .atm-panel {
+      position: fixed; top: 0; right: -420px; width: 380px; max-width: 95vw;
+      height: 100%; background: var(--bg2); border-left: 1px solid var(--border2);
+      z-index: 301; display: flex; flex-direction: column;
+      transition: right 0.28s cubic-bezier(0.4,0,0.2,1);
+      box-shadow: -8px 0 32px rgba(0,0,0,0.4);
+    }
+    .atm-panel.open { right: 0; }
+    .atm-panel-head { display: flex; align-items: center; gap: 10px; padding: 16px 16px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .atm-panel-head h3 { flex: 1; font-size: 0.92em; font-weight: 600; margin: 0; }
+    .atm-close { background: none; border: none; color: var(--text3); font-size: 1.2em; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+    .atm-close:hover { color: var(--text); background: var(--bg3); }
+    .atm-panel-search { padding: 10px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .atm-panel-list { flex: 1; overflow-y: auto; padding: 4px 0; }
+    .atm-track { display: flex; align-items: center; gap: 10px; padding: 8px 14px; transition: background 0.12s; }
+    .atm-track:hover:not(.in-playlist) { background: var(--bg3); }
+    .atm-track.in-playlist { opacity: 0.45; }
+    .atm-track-name { flex: 1; font-size: 0.83em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .atm-track-badge { font-size: 0.68em; padding: 2px 7px; border-radius: 20px; background: var(--accent-bg); border: 1px solid var(--accent2); color: var(--accent); flex-shrink: 0; }
+    .atm-track-add { font-size: 0.75em; padding: 3px 10px; border-radius: 6px; border: 1px solid var(--border2); background: var(--bg3); color: var(--text2); cursor: pointer; flex-shrink: 0; }
+    .atm-track-add:hover { border-color: var(--accent2); color: var(--accent); }
+    .atm-panel-footer { padding: 12px 14px; border-top: 1px solid var(--border); flex-shrink: 0; text-align: right; }
+
     /* ── SCROLLBARS ── */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -535,7 +585,7 @@
           <!-- Library sidebar -->
           <div class="audio-library">
             <div class="audio-lib-head">
-              <h2>Library</h2>
+              <h2 id="lib-head-label">Playlist</h2>
               <button class="btn amber" onclick="openUpload()" style="padding:4px 10px;font-size:0.75em;">+ Upload</button>
             </div>
             <div class="lib-cat-tabs">
@@ -543,10 +593,34 @@
               <div class="lib-cat-tab amb"         onclick="setLibCat('amb')">AMB</div>
               <div class="lib-cat-tab sfx"         onclick="setLibCat('sfx')">SFX</div>
             </div>
-            <div class="lib-search">
-              <input class="txt-input" id="lib-search" placeholder="Search tracks..." style="width:100%;" oninput="renderLibrary()">
+
+            <!-- BGM = Playlist view -->
+            <div id="pl-sidebar" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
+              <div class="pl-controls-bar">
+                <div class="pl-np-info">
+                  <div class="pl-np-name" id="pl-np-name">No track selected</div>
+                  <div class="pl-np-sub"  id="pl-np-sub">Add tracks to get started</div>
+                </div>
+                <div class="pl-btns">
+                  <button class="pl-tr-btn" onclick="plPrev()"        title="Previous">&#9664;&#9664;</button>
+                  <button class="pl-tr-btn" id="pl-play-btn" onclick="plTogglePlay()" title="Play / Pause">&#9654;</button>
+                  <button class="pl-tr-btn" onclick="plNext()"        title="Next">&#9654;&#9654;</button>
+                  <button class="pl-tr-btn" onclick="plStop()"        title="Stop">&#9632;</button>
+                </div>
+              </div>
+              <div class="lib-list" id="pl-track-list"></div>
+              <div class="pl-sidebar-footer">
+                <button class="btn full" onclick="openAddTracks()">+ Add Track</button>
+              </div>
             </div>
-            <div class="lib-list" id="lib-list"></div>
+
+            <!-- AMB / SFX = normal library view -->
+            <div id="lib-sidebar" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+              <div class="lib-search">
+                <input class="txt-input" id="lib-search" placeholder="Search tracks..." style="width:100%;" oninput="renderLibrary()">
+              </div>
+              <div class="lib-list" id="lib-list"></div>
+            </div>
           </div>
 
           <!-- Playback controls -->
@@ -1058,13 +1132,18 @@ function revealRoll(id) {
 }
 
 // ============================================================================
-// Audio library
+// Audio library + Playlist
 // ============================================================================
 async function loadTracks() {
   try {
     const res = await fetch('/api/tracks');
     tracks = await res.json();
-    renderLibrary();
+    // If BGM tab is active, renderLibrary shows playlist — refresh that too
+    if (libCat === 'bgm') {
+      await loadPlaylist();
+    } else {
+      renderLibrary();
+    }
     renderSfxPads();
   } catch(e) { showToast('Failed to load tracks'); }
 }
@@ -1074,21 +1153,26 @@ function setLibCat(cat) {
   document.querySelectorAll('.lib-cat-tab').forEach(t => {
     t.classList.toggle('active', t.classList.contains(cat));
   });
-  renderLibrary();
+  const isBgm = cat === 'bgm';
+  document.getElementById('pl-sidebar').style.display  = isBgm ? 'flex' : 'none';
+  document.getElementById('lib-sidebar').style.display = isBgm ? 'none' : 'flex';
+  document.getElementById('lib-head-label').textContent = isBgm ? 'Playlist' : 'Library';
+  if (!isBgm) renderLibrary();
 }
 
 function renderLibrary() {
-  const q = document.getElementById('lib-search').value.toLowerCase();
+  const q   = document.getElementById('lib-search')?.value.toLowerCase() || '';
   const key = libCat === 'amb' ? 'ambience' : libCat;
   const list = (tracks[key] || []).filter(t => t.name.toLowerCase().includes(q));
-  document.getElementById('lib-list').innerHTML = list.map(t => `
+  const el = document.getElementById('lib-list');
+  if (!el) return;
+  el.innerHTML = list.map(t => `
     <div class="lib-track" draggable="true"
          data-url="${t.url}" data-name="${t.name}"
          onclick="quickLoad('${libCat==='amb'?'ambience':'bgm'}','${t.url}','${t.name}')">
       <div class="lib-track-dot ${libCat}"></div>
       <span class="lib-track-name">${t.name}</span>
       <div class="lib-track-acts">
-        <button class="lib-act-btn b" onclick="event.stopPropagation();loadCh('bgm','${t.url}','${t.name}')" title="BGM">B</button>
         <button class="lib-act-btn a" onclick="event.stopPropagation();loadCh('ambience','${t.url}','${t.name}')" title="Amb">A</button>
         <button class="lib-act-btn s" onclick="event.stopPropagation();playSfx('${t.url}','${t.name}')" title="SFX">S</button>
         <button class="lib-act-btn x" onclick="event.stopPropagation();delTrack('${t.category}','${t.filename}')" title="Delete">&#215;</button>
@@ -1823,7 +1907,7 @@ function rollInitiative() { showToast('Roll initiative: coming soon'); }
 // ============================================================================
 // Init
 // ============================================================================
-loadTracks();
+loadTracks();   // also calls loadPlaylist() since BGM is the default tab
 buildRightPanel('audio');
 renderParty();
 
@@ -1836,5 +1920,247 @@ fetch('/api/me')
   })
   .catch(() => {});
 </script>
+
+<!-- ── ADD TRACK SLIDE-OVER ── -->
+<div class="atm-overlay" id="atm-overlay" onclick="closeAddTracks()"></div>
+<div class="atm-panel" id="atm-panel">
+  <div class="atm-panel-head">
+    <h3>BGM Library</h3>
+    <button class="atm-close" onclick="closeAddTracks()" title="Close">&#215;</button>
+  </div>
+  <div class="atm-panel-search">
+    <input class="txt-input" id="atm-search" placeholder="Search tracks..." style="width:100%;" oninput="renderAddTracks()">
+  </div>
+  <div class="atm-panel-list" id="atm-list"></div>
+  <div class="atm-panel-footer">
+    <button class="btn" onclick="closeAddTracks()">Done</button>
+  </div>
+</div>
+
+<script>
+// ============================================================================
+// Playlist (inline in sidebar)
+// ============================================================================
+
+let playlist    = [];     // [{id, filename, name, url, position}, ...]
+let plCurrentIdx = null;  // which index is loaded/playing
+let plDragSrcIdx = null;  // drag source
+
+// ── Load & render ─────────────────────────────────────────────────────────────
+
+async function loadPlaylist() {
+  try {
+    const res = await fetch('/api/playlist');
+    playlist = await res.json();
+    renderPlaylist();
+  } catch(e) { showToast('Failed to load playlist'); }
+}
+
+function renderPlaylist() {
+  const el = document.getElementById('pl-track-list');
+  if (!el) return;
+  if (!playlist.length) {
+    el.innerHTML = '<div class="pl-empty">Your playlist is empty.<br>Click <strong>+ Add Track</strong> below.</div>';
+    return;
+  }
+  el.innerHTML = playlist.map((t, i) => `
+    <div class="pl-track ${plCurrentIdx === i ? 'active' : ''}"
+         draggable="true" data-idx="${i}"
+         ondragstart="plDragStart(event,${i})"
+         ondragover="plDragOver(event,${i})"
+         ondragleave="plDragLeave(event)"
+         ondrop="plDrop(event,${i})"
+         ondragend="plDragEnd()"
+         onclick="plLoadTrack(${i})">
+      <span class="pl-track-drag" title="Drag to reorder">&#8942;&#8942;</span>
+      <span class="pl-track-idx">${i + 1}</span>
+      <span class="pl-track-name">${esc(t.name)}</span>
+      <button class="pl-track-del" onclick="event.stopPropagation();plRemoveTrack(${t.id})" title="Remove">&#215;</button>
+    </div>`).join('');
+}
+
+// ── Playback ──────────────────────────────────────────────────────────────────
+
+function plLoadTrack(idx) {
+  if (idx < 0 || idx >= playlist.length) return;
+  plCurrentIdx = idx;
+  const t = playlist[idx];
+  loadCh('bgm', t.url, t.name);
+  plUpdateNowPlaying(t.name, true);
+  renderPlaylist();
+}
+
+function plTogglePlay() {
+  const a = audioEls['bgm'];
+  if (plCurrentIdx === null) {
+    if (playlist.length) plLoadTrack(0);
+    return;
+  }
+  if (a.paused) {
+    a.play();
+    socket.emit('bgm:play', { track: { url: a.src, name: playlist[plCurrentIdx]?.name }, currentTime: a.currentTime, duration: a.duration, loop: a.loop });
+    plUpdateNowPlaying(playlist[plCurrentIdx]?.name, true);
+  } else {
+    a.pause();
+    socket.emit('bgm:pause');
+    plUpdateNowPlaying(playlist[plCurrentIdx]?.name, false);
+  }
+}
+
+function plNext() {
+  if (!playlist.length) return;
+  plLoadTrack(plCurrentIdx === null ? 0 : (plCurrentIdx + 1) % playlist.length);
+}
+
+function plPrev() {
+  if (!playlist.length) return;
+  plLoadTrack(plCurrentIdx === null ? 0 : (plCurrentIdx - 1 + playlist.length) % playlist.length);
+}
+
+function plStop() {
+  stopCh('bgm');
+  plCurrentIdx = null;
+  plUpdateNowPlaying(null, false);
+  renderPlaylist();
+}
+
+function plUpdateNowPlaying(name, playing) {
+  const nameEl = document.getElementById('pl-np-name');
+  const subEl  = document.getElementById('pl-np-sub');
+  const btn    = document.getElementById('pl-play-btn');
+  if (nameEl) nameEl.textContent = name || 'No track selected';
+  if (subEl)  subEl.textContent  = name ? (playing ? 'Now playing via BGM' : 'Paused') : 'Add tracks to get started';
+  if (btn)    btn.innerHTML = playing ? '&#9646;&#9646;' : '&#9654;';
+}
+
+// Auto-advance when track ends naturally
+audioEls['bgm'].addEventListener('ended', () => {
+  if (plCurrentIdx !== null) plNext();
+});
+
+// ── Remove ────────────────────────────────────────────────────────────────────
+
+async function plRemoveTrack(trackId) {
+  try {
+    await fetch(`/api/playlist/${trackId}`, { method: 'DELETE' });
+    await loadPlaylist();
+    showToast('Removed from playlist');
+  } catch(e) { showToast('Failed to remove track'); }
+}
+
+// ── Drag-to-reorder ───────────────────────────────────────────────────────────
+
+function plDragStart(e, idx) {
+  plDragSrcIdx = idx;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', String(idx));
+  // prevent the channel drop-zone from catching this drag
+  e.stopPropagation();
+}
+
+function plDragOver(e, idx) {
+  e.preventDefault();
+  e.stopPropagation();
+  e.dataTransfer.dropEffect = 'move';
+  document.querySelectorAll('.pl-track').forEach((el, i) =>
+    el.classList.toggle('drag-over', i === idx && i !== plDragSrcIdx));
+}
+
+function plDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+
+async function plDrop(e, dropIdx) {
+  e.preventDefault();
+  e.stopPropagation();
+  document.querySelectorAll('.pl-track').forEach(el => el.classList.remove('drag-over'));
+  if (plDragSrcIdx === null || plDragSrcIdx === dropIdx) return;
+
+  const moved = playlist.splice(plDragSrcIdx, 1)[0];
+  playlist.splice(dropIdx, 0, moved);
+
+  if      (plCurrentIdx === plDragSrcIdx)                               plCurrentIdx = dropIdx;
+  else if (plDragSrcIdx < plCurrentIdx && dropIdx >= plCurrentIdx)      plCurrentIdx--;
+  else if (plDragSrcIdx > plCurrentIdx && dropIdx <= plCurrentIdx)      plCurrentIdx++;
+
+  renderPlaylist();
+  try {
+    await fetch('/api/playlist/reorder', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order: playlist.map(t => t.id) })
+    });
+  } catch(e) { showToast('Failed to save order'); }
+}
+
+function plDragEnd() {
+  plDragSrcIdx = null;
+  document.querySelectorAll('.pl-track').forEach(el => el.classList.remove('drag-over'));
+}
+
+// ── Add Track slide-over ──────────────────────────────────────────────────────
+
+function openAddTracks() {
+  document.getElementById('atm-overlay').classList.add('open');
+  document.getElementById('atm-panel').classList.add('open');
+  document.getElementById('atm-search').value = '';
+  renderAddTracks();
+}
+
+function closeAddTracks() {
+  document.getElementById('atm-overlay').classList.remove('open');
+  document.getElementById('atm-panel').classList.remove('open');
+}
+
+// Store BGM track objects for the add-panel so we can look them up by filename
+let atmTrackMap = {};
+
+function renderAddTracks() {
+  const q = document.getElementById('atm-search').value.toLowerCase();
+  const bgmTracks = (tracks.bgm || []).filter(t => t.name.toLowerCase().includes(q));
+  const inPlaylist = new Set(playlist.map(p => p.filename));
+
+  // Rebuild lookup map each render
+  atmTrackMap = {};
+  bgmTracks.forEach(t => { atmTrackMap[t.filename] = t; });
+
+  const list = document.getElementById('atm-list');
+  list.innerHTML = bgmTracks.length
+    ? bgmTracks.map(t => {
+        const already = inPlaylist.has(t.filename);
+        return `<div class="atm-track ${already ? 'in-playlist' : ''}">
+          <span class="atm-track-name">${esc(t.name)}</span>
+          ${already
+            ? '<span class="atm-track-badge">&#10003; Added</span>'
+            : `<button class="atm-track-add" data-filename="${esc(t.filename)}">+ Add</button>`
+          }
+        </div>`;
+      }).join('')
+    : '<div style="padding:24px;text-align:center;color:var(--text3);font-size:0.82em;">No BGM tracks found on server</div>';
+
+  // Single delegated listener — avoids inline onclick quote-escaping issues
+  list.querySelectorAll('.atm-track-add').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const filename = btn.dataset.filename;
+      const t = atmTrackMap[filename];
+      if (!t) return;
+      await atmAddTrack(t.filename, t.name, t.url);
+    });
+  });
+}
+
+async function atmAddTrack(filename, name, url) {
+  try {
+    const res = await fetch('/api/playlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename, name, url })
+    });
+    if (!res.ok) { const d = await res.json(); showToast(d.error || 'Failed'); return; }
+    await loadPlaylist();
+    renderAddTracks();
+    showToast(`Added: ${name}`);
+  } catch(e) { showToast('Failed to add track'); }
+}
+</script>
 </body>
-</html>

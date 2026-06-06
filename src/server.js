@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const { setupSession, setupAuthRoutes, requireAuth } = require('./auth');
+const { getPlaylistTracks, addTrackToPlaylist, removeTrackFromPlaylist, reorderPlaylist } = require('./db');
 
 const app = express();
 
@@ -230,6 +231,34 @@ app.delete('/api/tracks/:category/:filename', requireAuth, (req, res) => {
   } else {
     res.status(404).json({ error: 'File not found' });
   }
+});
+
+// ── Playlist routes — GM only ─────────────────────────────────────────────────
+
+app.get('/api/playlist', requireAuth, (req, res) => {
+  const tracks = getPlaylistTracks(req.session.user.id);
+  res.json(tracks);
+});
+
+app.post('/api/playlist', requireAuth, (req, res) => {
+  const { filename, name, url } = req.body;
+  if (!filename || !name || !url) return res.status(400).json({ error: 'Missing fields' });
+  const result = addTrackToPlaylist(req.session.user.id, filename, name, url);
+  if (!result.success) return res.status(409).json({ error: result.error });
+  res.json({ success: true });
+});
+
+app.delete('/api/playlist/:id', requireAuth, (req, res) => {
+  const removed = removeTrackFromPlaylist(req.session.user.id, Number(req.params.id));
+  if (!removed) return res.status(404).json({ error: 'Track not found in playlist' });
+  res.json({ success: true });
+});
+
+app.put('/api/playlist/reorder', requireAuth, (req, res) => {
+  const { order } = req.body; // array of track IDs in new order
+  if (!Array.isArray(order)) return res.status(400).json({ error: 'order must be an array' });
+  reorderPlaylist(req.session.user.id, order);
+  res.json({ success: true });
 });
 
 // ── Error handler ─────────────────────────────────────────────────────────────

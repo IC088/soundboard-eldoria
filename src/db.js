@@ -28,6 +28,22 @@ db.exec(`
     created_at  INTEGER NOT NULL DEFAULT (unixepoch()),
     last_login  INTEGER
   );
+
+  CREATE TABLE IF NOT EXISTS playlists (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id    INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+    created_at INTEGER NOT NULL DEFAULT (unixepoch())
+  );
+
+  CREATE TABLE IF NOT EXISTS playlist_tracks (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    playlist_id INTEGER NOT NULL REFERENCES playlists(id) ON DELETE CASCADE,
+    filename    TEXT    NOT NULL,
+    name        TEXT    NOT NULL,
+    url         TEXT    NOT NULL,
+    position    INTEGER NOT NULL DEFAULT 0,
+    added_at    INTEGER NOT NULL DEFAULT (unixepoch())
+  );
 `);
 
 // ─── Password helpers ───────────────────────────────────────────────────────
@@ -105,6 +121,62 @@ function userCount() {
   return db.prepare('SELECT COUNT(*) as count FROM users').get().count;
 }
 
+// ─── Playlist helpers ────────────────────────────────────────────────────────
+
+function getOrCreatePlaylist(userId) {
+  let playlist = db.prepare('SELECT * FROM playlists WHERE user_id = ?').get(userId);
+  if (!playlist) {
+    const result = db.prepare('INSERT INTO playlists (user_id) VALUES (?)').run(userId);
+    playlist = { id: result.lastInsertRowid, user_id: userId };
+  }
+  return playlist;
+}
+
+function getPlaylistTracks(userId) {
+  const playlist = getOrCreatePlaylist(userId);
+  return db.prepare(
+    'SELECT * FROM playlist_tracks WHERE playlist_id = ? ORDER BY position ASC, id ASC'
+  ).all(playlist.id);
+}
+
+function addTrackToPlaylist(userId, filename, name, url) {
+  const playlist = getOrCreatePlaylist(userId);
+  // Prevent duplicates
+  const existing = db.prepare(
+    'SELECT id FROM playlist_tracks WHERE playlist_id = ? AND filename = ?'
+  ).get(playlist.id, filename);
+  if (existing) return { success: false, error: 'Track already in playlist' };
+
+  const maxPos = db.prepare(
+    'SELECT COALESCE(MAX(position), -1) as m FROM playlist_tracks WHERE playlist_id = ?'
+  ).get(playlist.id).m;
+
+  db.prepare(
+    'INSERT INTO playlist_tracks (playlist_id, filename, name, url, position) VALUES (?, ?, ?, ?, ?)'
+  ).run(playlist.id, filename, name, url, maxPos + 1);
+  return { success: true };
+}
+
+function removeTrackFromPlaylist(userId, trackId) {
+  const playlist = getOrCreatePlaylist(userId);
+  const result = db.prepare(
+    'DELETE FROM playlist_tracks WHERE id = ? AND playlist_id = ?'
+  ).run(trackId, playlist.id);
+  return result.changes > 0;
+}
+
+function reorderPlaylist(userId, orderedIds) {
+  const playlist = getOrCreatePlaylist(userId);
+  const update = db.prepare(
+    'UPDATE playlist_tracks SET position = ? WHERE id = ? AND playlist_id = ?'
+  );
+  const runAll = db.transaction((ids) => {
+    ids.forEach((id, idx) => update.run(idx, id, playlist.id));
+  });
+  runAll(orderedIds);
+  return true;
+}
+
 module.exports = {
   db,
   createUser,
@@ -114,4 +186,8 @@ module.exports = {
   deleteUser,
   updatePassword,
   userCount,
+  getPlaylistTracks,
+  addTrackToPlaylist,
+  removeTrackFromPlaylist,
+  reorderPlaylist,
 };

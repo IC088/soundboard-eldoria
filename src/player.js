@@ -237,11 +237,55 @@ class PlayerVolumeControl {
 const socket = io();
 let playerVolumeControl = null;
 let playerName          = '';
+let gmRoom              = '';   // the GM username / room this player joined
 let localPaused         = false;
 
 // ---------------------------------------------------------------------------
-// Login
+// Session picker + login flow
 // ---------------------------------------------------------------------------
+
+async function loadSessionList() {
+  try {
+    const res      = await fetch('/api/sessions');
+    const sessions = await res.json();
+    const list     = document.getElementById('session-list');
+    const empty    = document.getElementById('session-empty');
+
+    if (!sessions.length) {
+      list.innerHTML  = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+    list.innerHTML = sessions.map(s => `
+      <div class="session-item" onclick="selectSession('${s.username}')">
+        <div class="session-dot"></div>
+        <div class="session-info">
+          <div class="session-name">${s.username}</div>
+          <div class="session-sub">Session active</div>
+        </div>
+        <div class="session-join">Join &rsaquo;</div>
+      </div>`).join('');
+  } catch(e) {
+    console.error('Failed to load sessions:', e);
+  }
+}
+
+function selectSession(username) {
+  gmRoom = username;
+  localStorage.setItem('soundboard_gm_room', username);
+  document.getElementById('step-pick').style.display    = 'none';
+  document.getElementById('step-name').style.display    = 'block';
+  document.getElementById('selected-gm-name').textContent = username;
+  document.getElementById('player-name-input').focus();
+}
+
+function backToSessionPick() {
+  gmRoom = '';
+  document.getElementById('step-name').style.display = 'none';
+  document.getElementById('step-pick').style.display = 'block';
+  loadSessionList();
+}
 
 function submitLogin() {
   const input = document.getElementById('player-name-input');
@@ -251,20 +295,23 @@ function submitLogin() {
     input.focus();
     return;
   }
+  if (!gmRoom) {
+    document.getElementById('login-error').textContent = 'Please select a GM session first.';
+    return;
+  }
   playerName = name;
   localStorage.setItem('soundboard_player_name', name);
   document.getElementById('login-overlay').classList.add('hidden');
   document.getElementById('header-player-name').textContent = name;
   if (typeof setAvatarInitial === 'function') setAvatarInitial(name);
 
-  // If socket already connected register immediately, otherwise connect handler fires
   if (socket.connected) {
     registerAndInit();
   }
 }
 
 function registerAndInit() {
-  socket.emit('register', { role: 'player', name: playerName });
+  socket.emit('register', { role: 'player', name: playerName, room: gmRoom });
   if (!playerVolumeControl) {
     playerVolumeControl = new PlayerVolumeControl(socket);
     playerVolumeControl.setupSocketListeners(() => localPaused);
@@ -273,11 +320,20 @@ function registerAndInit() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  const saved = localStorage.getItem('soundboard_player_name');
-  const input = document.getElementById('player-name-input');
-  if (saved) input.value = saved;
-  input.focus();
+  const savedName = localStorage.getItem('soundboard_player_name');
+  const savedRoom = localStorage.getItem('soundboard_gm_room');
+  const input     = document.getElementById('player-name-input');
+  if (savedName) input.value = savedName;
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitLogin(); });
+
+  // Show session picker by default; /api/sessions will populate it
+  loadSessionList();
+  // Refresh the list every 10s while on the picker
+  setInterval(() => {
+    if (!document.getElementById('login-overlay').classList.contains('hidden')) {
+      loadSessionList();
+    }
+  }, 10000);
 });
 
 // ---------------------------------------------------------------------------
@@ -299,6 +355,26 @@ socket.on('disconnect', () => {
   console.log('Disconnected from soundboard server');
   document.getElementById('connection-status').classList.add('disconnected');
   document.getElementById('connection-text').textContent = 'Disconnected';
+});
+
+// GM closed their session — show offline screen
+socket.on('gm:offline', () => {
+  console.log('GM went offline');
+  const overlay = document.getElementById('gm-offline-overlay');
+  if (overlay) overlay.classList.remove('hidden');
+  // Stop any playing audio
+  const bgm = document.getElementById('bgm-audio');
+  const amb = document.getElementById('ambience-audio');
+  if (bgm) bgm.pause();
+  if (amb) amb.pause();
+});
+
+// Live session list updates (server broadcasts when GMs connect/disconnect)
+socket.on('sessions:update', (sessions) => {
+  // Only refresh the list if the login overlay is still visible
+  if (!document.getElementById('login-overlay').classList.contains('hidden')) {
+    loadSessionList();
+  }
 });
 
 // ---------------------------------------------------------------------------

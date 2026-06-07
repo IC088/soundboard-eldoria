@@ -145,7 +145,5 @@ npm-debug.log
 .DS_Store
 .env
 dist
-
-# SQLite WAL files (transient, machine-specific)
 data/*.db-shm
 data/*.db-wal

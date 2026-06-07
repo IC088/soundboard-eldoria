@@ -90,15 +90,30 @@ app.use('/audio/sfx',      express.static(AUDIO_DIRS.sfx));
 // 3D dice WebGL assets
 app.use('/assets/dice-box', express.static(path.join(__dirname, 'public', 'assets', 'dice-box')));
 
-// ── Playback state ────────────────────────────────────────────────────────────
-let playbackState = {
-  bgm:      { track: null, playing: false, volume: 0.5, currentTime: 0, loop: true, duration: null, playbackStartedAt: null },
-  ambience: { track: null, playing: false, volume: 0.3, currentTime: 0, loop: true, duration: null, playbackStartedAt: null },
-  sfx: []
-};
+// ── Per-room state ────────────────────────────────────────────────────────────
+// Each GM gets their own isolated room keyed by username.
 
-function getLiveCurrentTime(channel) {
-  const ch = playbackState[channel];
+const rooms = new Map(); // roomName -> { playbackState, rollHistory, sessionFeed }
+
+function getRoom(name) {
+  if (!rooms.has(name)) {
+    rooms.set(name, {
+      playbackState: {
+        bgm:      { track: null, playing: false, volume: 0.5, currentTime: 0, loop: true, duration: null, playbackStartedAt: null },
+        ambience: { track: null, playing: false, volume: 0.3, currentTime: 0, loop: true, duration: null, playbackStartedAt: null },
+        sfx: []
+      },
+      rollHistory: new Map(),
+      sessionFeed: []
+    });
+  }
+  return rooms.get(name);
+}
+
+const MAX_FEED = 100;
+
+function getLiveCurrentTime(room, channel) {
+  const ch = room.playbackState[channel];
   if (!ch.playing || ch.playbackStartedAt === null) return ch.currentTime;
   const elapsed = (Date.now() - ch.playbackStartedAt) / 1000;
   const raw = ch.currentTime + elapsed;
@@ -106,25 +121,20 @@ function getLiveCurrentTime(channel) {
   return raw;
 }
 
-function getLiveState() {
+function getLiveState(room) {
   return {
-    bgm:      { ...playbackState.bgm,      currentTime: getLiveCurrentTime('bgm') },
-    ambience: { ...playbackState.ambience, currentTime: getLiveCurrentTime('ambience') }
+    bgm:      { ...room.playbackState.bgm,      currentTime: getLiveCurrentTime(room, 'bgm') },
+    ambience: { ...room.playbackState.ambience, currentTime: getLiveCurrentTime(room, 'ambience') }
   };
 }
 
-// ── Dice state ────────────────────────────────────────────────────────────────
-const rollHistory = new Map();
-const sessionFeed = [];
-const MAX_FEED    = 100;
-
-function addToHistory(record) {
+function addToHistory(room, record) {
   const key = record.roller;
-  if (!rollHistory.has(key)) rollHistory.set(key, []);
-  rollHistory.get(key).unshift(record);
-  if (rollHistory.get(key).length > 200) rollHistory.get(key).pop();
-  sessionFeed.unshift(record);
-  if (sessionFeed.length > MAX_FEED) sessionFeed.pop();
+  if (!room.rollHistory.has(key)) room.rollHistory.set(key, []);
+  room.rollHistory.get(key).unshift(record);
+  if (room.rollHistory.get(key).length > 200) room.rollHistory.get(key).pop();
+  room.sessionFeed.unshift(record);
+  if (room.sessionFeed.length > MAX_FEED) room.sessionFeed.pop();
 }
 
 function calcDegreeOfSuccess(total, dc, isNat20, isNat1) {
@@ -141,21 +151,35 @@ function calcDegreeOfSuccess(total, dc, isNat20, isNat1) {
 }
 
 // ── Connected clients ─────────────────────────────────────────────────────────
-let connectedClients = { dm: null, players: new Set() };
+// gmSockets: username -> socket.id  (only live GMs)
+// playerSyncState: socket.id -> { syncMode, pausedAt, name, room }
+
+const gmSockets       = new Map(); // username -> socket.id
 const playerSyncState = new Map();
 
-function broadcastClientUpdate() {
+function broadcastClientUpdate(roomName) {
   const playerList = [];
   playerSyncState.forEach((state, id) => {
-    playerList.push({ id, name: state.name || id, syncMode: state.syncMode });
+    if (state.room === roomName) {
+      playerList.push({ id, name: state.name || id, syncMode: state.syncMode });
+    }
   });
   const pausedCount = playerList.filter(p => p.syncMode === 'PAUSED').length;
-  io.emit('clients:update', {
-    dm: !!connectedClients.dm,
-    players: connectedClients.players.size,
+  const gmOnline = gmSockets.has(roomName);
+  io.to(roomName).emit('clients:update', {
+    dm: gmOnline,
+    players: playerList.length,
     pausedCount,
     playerList
   });
+}
+
+function broadcastSessionList() {
+  const sessions = [];
+  gmSockets.forEach((socketId, username) => {
+    sessions.push({ username });
+  });
+  io.emit('sessions:update', sessions);
 }
 
 // ── API routes ────────────────────────────────────────────────────────────────
@@ -192,13 +216,36 @@ app.get('/api/limits', (req, res) => {
   });
 });
 
-app.get('/api/state', (req, res) => res.json(playbackState));
-
-app.get('/api/dice/history/:character', (req, res) => {
-  res.json({ character: req.params.character, rolls: rollHistory.get(req.params.character) || [] });
+app.get('/api/state', (req, res) => {
+  // Return state for the requesting GM's own room
+  if (req.session && req.session.user) {
+    const room = getRoom(req.session.user.username);
+    return res.json(room.playbackState);
+  }
+  res.json({});
 });
 
-app.get('/api/dice/feed', (req, res) => res.json(sessionFeed));
+app.get('/api/sessions', (req, res) => {
+  const sessions = [];
+  gmSockets.forEach((socketId, username) => sessions.push({ username }));
+  res.json(sessions);
+});
+
+app.get('/api/dice/history/:character', (req, res) => {
+  if (req.session && req.session.user) {
+    const room = getRoom(req.session.user.username);
+    return res.json({ character: req.params.character, rolls: room.rollHistory.get(req.params.character) || [] });
+  }
+  res.json({ character: req.params.character, rolls: [] });
+});
+
+app.get('/api/dice/feed', (req, res) => {
+  if (req.session && req.session.user) {
+    const room = getRoom(req.session.user.username);
+    return res.json(room.sessionFeed);
+  }
+  res.json([]);
+});
 
 // Upload — GM only (requires auth)
 app.post('/api/upload/bgm',      requireAuth, uploads.bgm.array('files', 20),      (req, res) => handleUpload(req, res, 'bgm'));
@@ -275,101 +322,131 @@ app.use((err, req, res, next) => {
 io.on('connection', (socket) => {
   console.log(`Client connected: ${socket.id}`);
 
+  // ── Register ──────────────────────────────────────────────────────────────
+  // GM:     { role: 'dm',     name: <username> }
+  // Player: { role: 'player', name: <playerName>, room: <gmUsername> }
+
   socket.on('register', (payload) => {
     const role = typeof payload === 'string' ? payload : payload.role;
     const name = typeof payload === 'object' && payload.name ? payload.name : null;
+    const room = typeof payload === 'object' && payload.room ? payload.room : name;
 
     socket.role       = role;
     socket.playerName = name;
+    socket.room       = role === 'dm' ? name : room; // GMs own their room
+
+    socket.join(socket.room);
 
     if (role === 'dm') {
-      connectedClients.dm = socket.id;
+      gmSockets.set(name, socket.id);
+      broadcastSessionList();
+      console.log(`[room] GM "${name}" opened session`);
     } else {
-      connectedClients.players.add(socket.id);
-      playerSyncState.set(socket.id, { syncMode: 'LIVE', pausedAt: null, name: name || socket.id });
+      playerSyncState.set(socket.id, { syncMode: 'LIVE', pausedAt: null, name: name || socket.id, room: socket.room });
     }
 
-    socket.emit('state:sync', getLiveState());
-    broadcastClientUpdate();
+    const r = getRoom(socket.room);
+    socket.emit('state:sync', getLiveState(r));
+    broadcastClientUpdate(socket.room);
   });
 
   // ── BGM ──────────────────────────────────────────────────────────────────
 
   socket.on('bgm:play', (data) => {
-    playbackState.bgm = { ...playbackState.bgm, ...data, playing: true, playbackStartedAt: Date.now() };
-    io.emit('bgm:play', playbackState.bgm);
+    const r = getRoom(socket.room);
+    r.playbackState.bgm = { ...r.playbackState.bgm, ...data, playing: true, playbackStartedAt: Date.now() };
+    io.to(socket.room).emit('bgm:play', r.playbackState.bgm);
     playerSyncState.forEach((state, id) => {
-      if (state.syncMode === 'PAUSED') {
-        playerSyncState.set(id, { syncMode: 'LIVE', pausedAt: null });
-        io.to(id).emit('player:force:rejoin', getLiveState());
+      if (state.room === socket.room && state.syncMode === 'PAUSED') {
+        playerSyncState.set(id, { ...state, syncMode: 'LIVE', pausedAt: null });
+        io.to(id).emit('player:force:rejoin', getLiveState(r));
       }
     });
-    broadcastClientUpdate();
+    broadcastClientUpdate(socket.room);
   });
 
   socket.on('bgm:pause', () => {
-    playbackState.bgm.currentTime       = getLiveCurrentTime('bgm');
-    playbackState.bgm.playing           = false;
-    playbackState.bgm.playbackStartedAt = null;
-    io.emit('bgm:pause');
+    const r = getRoom(socket.room);
+    r.playbackState.bgm.currentTime       = getLiveCurrentTime(r, 'bgm');
+    r.playbackState.bgm.playing           = false;
+    r.playbackState.bgm.playbackStartedAt = null;
+    io.to(socket.room).emit('bgm:pause');
   });
 
   socket.on('bgm:stop', () => {
-    playbackState.bgm = { track: null, playing: false, volume: playbackState.bgm.volume, currentTime: 0, loop: true, duration: null, playbackStartedAt: null };
-    io.emit('bgm:stop');
+    const r = getRoom(socket.room);
+    r.playbackState.bgm = { track: null, playing: false, volume: r.playbackState.bgm.volume, currentTime: 0, loop: true, duration: null, playbackStartedAt: null };
+    io.to(socket.room).emit('bgm:stop');
   });
 
-  socket.on('bgm:volume', (volume) => { playbackState.bgm.volume = volume; io.emit('bgm:volume', volume); });
+  socket.on('bgm:volume', (volume) => {
+    const r = getRoom(socket.room);
+    r.playbackState.bgm.volume = volume;
+    io.to(socket.room).emit('bgm:volume', volume);
+  });
 
   socket.on('bgm:seek', (time) => {
-    playbackState.bgm.currentTime = time;
-    if (playbackState.bgm.playing) playbackState.bgm.playbackStartedAt = Date.now();
-    io.emit('bgm:seek', time);
+    const r = getRoom(socket.room);
+    r.playbackState.bgm.currentTime = time;
+    if (r.playbackState.bgm.playing) r.playbackState.bgm.playbackStartedAt = Date.now();
+    io.to(socket.room).emit('bgm:seek', time);
   });
 
-  socket.on('bgm:loop', (loop) => { playbackState.bgm.loop = loop; io.emit('bgm:loop', loop); });
+  socket.on('bgm:loop', (loop) => {
+    const r = getRoom(socket.room);
+    r.playbackState.bgm.loop = loop;
+    io.to(socket.room).emit('bgm:loop', loop);
+  });
 
   // ── Ambience ──────────────────────────────────────────────────────────────
 
   socket.on('ambience:play', (data) => {
-    playbackState.ambience = { ...playbackState.ambience, ...data, playing: true, playbackStartedAt: Date.now() };
-    io.emit('ambience:play', playbackState.ambience);
+    const r = getRoom(socket.room);
+    r.playbackState.ambience = { ...r.playbackState.ambience, ...data, playing: true, playbackStartedAt: Date.now() };
+    io.to(socket.room).emit('ambience:play', r.playbackState.ambience);
     playerSyncState.forEach((state, id) => {
-      if (state.syncMode === 'PAUSED') {
-        playerSyncState.set(id, { syncMode: 'LIVE', pausedAt: null });
-        io.to(id).emit('player:force:rejoin', getLiveState());
+      if (state.room === socket.room && state.syncMode === 'PAUSED') {
+        playerSyncState.set(id, { ...state, syncMode: 'LIVE', pausedAt: null });
+        io.to(id).emit('player:force:rejoin', getLiveState(r));
       }
     });
-    broadcastClientUpdate();
+    broadcastClientUpdate(socket.room);
   });
 
   socket.on('ambience:pause', () => {
-    playbackState.ambience.currentTime       = getLiveCurrentTime('ambience');
-    playbackState.ambience.playing           = false;
-    playbackState.ambience.playbackStartedAt = null;
-    io.emit('ambience:pause');
+    const r = getRoom(socket.room);
+    r.playbackState.ambience.currentTime       = getLiveCurrentTime(r, 'ambience');
+    r.playbackState.ambience.playing           = false;
+    r.playbackState.ambience.playbackStartedAt = null;
+    io.to(socket.room).emit('ambience:pause');
   });
 
   socket.on('ambience:stop', () => {
-    playbackState.ambience = { track: null, playing: false, volume: playbackState.ambience.volume, currentTime: 0, loop: true, duration: null, playbackStartedAt: null };
-    io.emit('ambience:stop');
+    const r = getRoom(socket.room);
+    r.playbackState.ambience = { track: null, playing: false, volume: r.playbackState.ambience.volume, currentTime: 0, loop: true, duration: null, playbackStartedAt: null };
+    io.to(socket.room).emit('ambience:stop');
   });
 
-  socket.on('ambience:volume', (volume) => { playbackState.ambience.volume = volume; io.emit('ambience:volume', volume); });
+  socket.on('ambience:volume', (volume) => {
+    const r = getRoom(socket.room);
+    r.playbackState.ambience.volume = volume;
+    io.to(socket.room).emit('ambience:volume', volume);
+  });
 
   // ── SFX ───────────────────────────────────────────────────────────────────
 
-  socket.on('sfx:play', (data) => io.emit('sfx:play', data));
+  socket.on('sfx:play', (data) => io.to(socket.room).emit('sfx:play', data));
 
   // ── Fades & master ────────────────────────────────────────────────────────
 
-  socket.on('fade:out', (data) => io.emit('fade:out', data));
-  socket.on('fade:in',  (data) => io.emit('fade:in',  data));
+  socket.on('fade:out', (data) => io.to(socket.room).emit('fade:out', data));
+  socket.on('fade:in',  (data) => io.to(socket.room).emit('fade:in',  data));
 
   socket.on('master:stop', () => {
-    playbackState.bgm      = { track: null, playing: false, volume: playbackState.bgm.volume,      currentTime: 0, loop: true, duration: null, playbackStartedAt: null };
-    playbackState.ambience = { track: null, playing: false, volume: playbackState.ambience.volume, currentTime: 0, loop: true, duration: null, playbackStartedAt: null };
-    io.emit('master:stop');
+    const r = getRoom(socket.room);
+    r.playbackState.bgm      = { track: null, playing: false, volume: r.playbackState.bgm.volume,      currentTime: 0, loop: true, duration: null, playbackStartedAt: null };
+    r.playbackState.ambience = { track: null, playing: false, volume: r.playbackState.ambience.volume, currentTime: 0, loop: true, duration: null, playbackStartedAt: null };
+    io.to(socket.room).emit('master:stop');
   });
 
   // ── Player volume (client-side only, no broadcast) ────────────────────────
@@ -383,18 +460,21 @@ io.on('connection', (socket) => {
 
   socket.on('player:local:pause', () => {
     if (playerSyncState.has(socket.id)) {
-      playerSyncState.set(socket.id, { syncMode: 'PAUSED', pausedAt: Date.now() });
+      const state = playerSyncState.get(socket.id);
+      playerSyncState.set(socket.id, { ...state, syncMode: 'PAUSED', pausedAt: Date.now() });
       console.log(`Player ${socket.id} paused locally`);
-      broadcastClientUpdate();
+      broadcastClientUpdate(socket.room);
     }
   });
 
   socket.on('player:local:resume', () => {
     if (playerSyncState.has(socket.id)) {
-      playerSyncState.set(socket.id, { syncMode: 'LIVE', pausedAt: null });
+      const state = playerSyncState.get(socket.id);
+      playerSyncState.set(socket.id, { ...state, syncMode: 'LIVE', pausedAt: null });
       console.log(`Player ${socket.id} rejoining live`);
-      socket.emit('player:rejoin:state', getLiveState());
-      broadcastClientUpdate();
+      const r = getRoom(socket.room);
+      socket.emit('player:rejoin:state', getLiveState(r));
+      broadcastClientUpdate(socket.room);
     }
   });
 
@@ -405,6 +485,7 @@ io.on('connection', (socket) => {
     if (!pool || !Array.isArray(pool) || pool.length === 0) return;
 
     const rollerName = roller || socket.playerName || 'Unknown';
+    const r = getRoom(socket.room);
 
     const diceResults = pool.flatMap(({ sides, count }) =>
       Array.from({ length: count }, () => ({
@@ -443,46 +524,56 @@ io.on('connection', (socket) => {
       role:            socket.role
     };
 
-    addToHistory(record);
+    addToHistory(r, record);
 
     const publicRecord  = { ...record };
     const privateRecord = { ...record, diceResults: null, diceSum: null, total: null,
                             degreeOfSuccess: null, isNat20: false, isNat1: false, redacted: true };
 
-    if (visibility === 'public') {
-      io.emit('dice:result', publicRecord);
-    } else {
-      io.sockets.sockets.forEach((s) => {
+    // Only broadcast within this room
+    const roomSockets = io.sockets.adapter.rooms.get(socket.room) || new Set();
+    roomSockets.forEach((sid) => {
+      const s = io.sockets.sockets.get(sid);
+      if (!s) return;
+      if (visibility === 'public') {
+        s.emit('dice:result', publicRecord);
+      } else {
         if      (s.id === socket.id) s.emit('dice:result', publicRecord);
         else if (s.role === 'dm')    s.emit('dice:result', publicRecord);
         else                         s.emit('dice:result', privateRecord);
-      });
-    }
+      }
+    });
 
-    console.log(`[dice] ${rollerName} rolled ${pool.map(p => `${p.count}d${p.sides}`).join('+')} = ${total} (${visibility})`);
+    console.log(`[dice][${socket.room}] ${rollerName} rolled ${pool.map(p => `${p.count}d${p.sides}`).join('+')} = ${total} (${visibility})`);
   });
 
   socket.on('dice:history:request', ({ character }) => {
-    socket.emit('dice:history', { character, rolls: rollHistory.get(character) || [] });
+    const r = getRoom(socket.room);
+    socket.emit('dice:history', { character, rolls: r.rollHistory.get(character) || [] });
   });
 
   socket.on('dice:feed:request', () => {
-    socket.emit('dice:feed', sessionFeed);
+    const r = getRoom(socket.room);
+    socket.emit('dice:feed', r.sessionFeed);
   });
 
   // ── Disconnect ────────────────────────────────────────────────────────────
 
   socket.on('disconnect', () => {
-    if (socket.role === 'dm') {
-      connectedClients.dm = null;
+    if (socket.role === 'dm' && socket.playerName) {
+      gmSockets.delete(socket.playerName);
+      // Notify players in this room that the GM went offline
+      io.to(socket.room).emit('gm:offline');
+      broadcastSessionList();
+      console.log(`[room] GM "${socket.playerName}" closed session`);
     } else {
-      connectedClients.players.delete(socket.id);
       playerSyncState.delete(socket.id);
+      if (socket.room) broadcastClientUpdate(socket.room);
     }
-    broadcastClientUpdate();
     console.log(`Client disconnected: ${socket.id}`);
   });
 });
+
 
 // ── Start ─────────────────────────────────────────────────────────────────────
 server.listen(PORT, '0.0.0.0', () => {

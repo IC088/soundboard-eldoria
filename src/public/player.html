@@ -49,6 +49,9 @@
       padding: 20px;
     }
     #login-overlay.hidden { display: none; }
+    .hidden { display: none !important; }
+    #gm-offline-overlay { display: flex; align-items: center; justify-content: center; }
+    #gm-offline-overlay.hidden { display: none !important; }
 
     .login-card {
       background: var(--bg2);
@@ -105,6 +108,22 @@
       transition: opacity 0.2s;
     }
     .login-card button:hover { opacity: 0.85; }
+
+    /* ── SESSION PICKER ── */
+    .session-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px; max-height: 280px; overflow-y: auto; }
+    .session-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px; border-radius: 10px;
+      border: 1px solid var(--border2); cursor: pointer;
+      background: var(--bg3); transition: border-color 0.15s, background 0.15s;
+      text-align: left;
+    }
+    .session-item:hover { border-color: var(--accent); background: var(--accent-bg); }
+    .session-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+    .session-info { flex: 1; min-width: 0; }
+    .session-name { font-size: 0.95em; font-weight: 600; color: var(--text); }
+    .session-sub  { font-size: 0.78em; color: var(--text3); margin-top: 2px; }
+    .session-join { font-size: 0.85em; color: var(--accent); font-weight: 600; flex-shrink: 0; }
 
     /* ── APP SHELL ── */
     #app {
@@ -684,15 +703,41 @@
 </head>
 <body>
 
-  <!-- Login Overlay -->
+  <!-- Login Overlay — two steps: pick GM, then enter name -->
   <div id="login-overlay">
-    <div class="login-card">
-      <div class="login-icon">&#127922;</div>
+
+    <!-- Step 1: Pick a session -->
+    <div id="step-pick" class="login-card">
+      <div class="login-icon">&#9835;</div>
       <h2>Eldoria Soundboard</h2>
-      <p>Enter your character or player name to join the session.</p>
+      <p>Choose a GM session to join.</p>
+      <div id="session-list" class="session-list"></div>
+      <div id="session-empty" style="display:none;color:var(--text3);font-size:0.85em;padding:20px 0;">
+        No active sessions right now.<br>Ask your GM to open the soundboard.
+      </div>
+    </div>
+
+    <!-- Step 2: Enter player name -->
+    <div id="step-name" class="login-card" style="display:none;">
+      <div class="login-icon">&#127922;</div>
+      <h2>Joining <span id="selected-gm-name" style="color:var(--accent);"></span></h2>
+      <p>Enter your character or player name.</p>
       <input type="text" id="player-name-input" placeholder="Your name or PC name" maxlength="32" autocomplete="off" />
       <div class="login-error" id="login-error"></div>
       <button onclick="submitLogin()">Join Session</button>
+      <button onclick="backToSessionPick()" style="margin-top:8px;background:transparent;border:1px solid var(--border2);color:var(--text2);">&#8592; Back</button>
+    </div>
+
+  </div>
+
+  <!-- GM Offline Overlay -->
+  <div id="gm-offline-overlay" class="hidden" style="
+    position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:2000;padding:20px;">
+    <div class="login-card" style="text-align:center;">
+      <div class="login-icon" style="color:var(--red);">&#9888;</div>
+      <h2 style="color:var(--red);">GM Disconnected</h2>
+      <p>Your GM has closed their session. Audio has been paused.</p>
+      <button onclick="location.reload()" style="margin-top:8px;">Back to session list</button>
     </div>
   </div>
 

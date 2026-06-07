@@ -926,7 +926,16 @@ const rpConfig = {
 // Socket
 // ============================================================================
 socket.on('connect', () => {
-  socket.emit('register', 'dm');
+  // Register with GM's username so players can find this room
+  const gmName = document.getElementById('gm-username')?.textContent?.trim();
+  if (gmName) {
+    socket.emit('register', { role: 'dm', name: gmName });
+  } else {
+    // Username not loaded yet — wait for /api/me to finish, then register
+    fetch('/api/me').then(r => r.json()).then(data => {
+      socket.emit('register', { role: 'dm', name: data.username });
+    });
+  }
   document.getElementById('conn-dot').classList.remove('off');
   document.getElementById('conn-text').textContent = 'Connected';
   showToast('Connected');
@@ -1916,7 +1925,13 @@ fetch('/api/me')
   .then(r => r.json())
   .then(data => {
     const el = document.getElementById('gm-username');
-    if (el && data.username) el.textContent = data.username;
+    if (el && data.username) {
+      el.textContent = data.username;
+      // If socket already connected but registered before username loaded, re-register now
+      if (socket.connected) {
+        socket.emit('register', { role: 'dm', name: data.username });
+      }
+    }
   })
   .catch(() => {});
 </script>

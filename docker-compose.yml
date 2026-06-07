@@ -10,6 +10,7 @@ services:
       - ./audio/ambience:/app/audio/ambience
       - ./audio/sfx:/app/audio/sfx
       - ./data:/app/data # Persist user data (e.g., playlists, settings, etc.)
+      - ./logs:/app/logs   # Persist log files
     env_file:
       - .env
     restart: unless-stopped

@@ -1039,13 +1039,8 @@ let currentTab = 'audio';
 // Dice state
 const gmDice = { pool: [], modifiers: { prof:0, item:0, status:0, circ:0 }, mode: 'secret', feed: [] };
 
-// Party state — loaded from localStorage, editable
-let party = JSON.parse(localStorage.getItem('gm_party') || '[]');
-if (!party.length) party = [
-  { id:1, name:'Arl',     cls:'Monk 8',       hp:98,  maxHp:98,  ac:24, speed:35, conditions:[], color:'#EEEDFE', textColor:'#3C3489' },
-  { id:2, name:'Johanna', cls:'Chronicler 8',  hp:88,  maxHp:88,  ac:21, speed:30, conditions:[], color:'#E1F5EE', textColor:'#085041' },
-  { id:3, name:'Thrain',  cls:'Fighter 8',     hp:110, maxHp:110, ac:22, speed:25, conditions:[], color:'#FAEEDA', textColor:'#633806' },
-];
+// Party state — loaded from localStorage (migrated on load in renderParty section below)
+let party = [];
 
 // Overworld map state
 const owMap = { hexes: {}, hexSize: 40, tool: 'terrain', terrain: 'desert', partyPos: null, revealed: new Set(), locations: [] };
@@ -1973,12 +1968,18 @@ function saveParty() { localStorage.setItem('gm_party', JSON.stringify(party)); 
 // Data submitted by players via socket, stored in server room state
 // ============================================================================
 
-// Default party template (GM-seeded; players will override via socket)
-if (!party.length) party = [
-  { id:1, name:'Arl',     cls:'Monk',     level:8, hp:98,  maxHp:98,  ac:24, speed:35, str:18,dex:16,con:14,int:12,wis:16,cha:10, saves:{fort:'E',ref:'E',will:'M'}, skills:{}, conditions:[], color:'#EEEDFE', textColor:'#3C3489', online:false },
-  { id:2, name:'Johanna', cls:'Chronicler',level:8,hp:88,  maxHp:88,  ac:21, speed:30, str:10,dex:14,con:12,int:18,wis:14,cha:16, saves:{fort:'T',ref:'T',will:'E'}, skills:{}, conditions:[], color:'#E1F5EE', textColor:'#085041', online:false },
-  { id:3, name:'Thrain',  cls:'Fighter',  level:8, hp:110, maxHp:110, ac:22, speed:25, str:20,dex:12,con:16,int:10,wis:10,cha:8,  saves:{fort:'E',ref:'T',will:'T'}, skills:{}, conditions:[], color:'#FAEEDA', textColor:'#633806', online:false },
-];
+// Load from localStorage, migrating old format if needed
+party = JSON.parse(localStorage.getItem('gm_party') || '[]');
+// Migrate old format: { cls:'Fighter 8' } → { cls:'Fighter', level:8 }
+party = party.map(pc => {
+  if (pc.level === undefined && pc.cls) {
+    const m = pc.cls.match(/^(.+?)\s*(\d+)$/);
+    if (m) return { ...pc, cls: m[1].trim(), level: Number(m[2]) };
+  }
+  return pc;
+});
+
+// Party starts empty — players push their sheets from the player page
 
 const expandedRows = new Set();
 
@@ -2007,13 +2008,13 @@ function renderParty() {
         ${pc.name}
         ${pc.conditions.length ? `<span style="font-size:0.7em;color:var(--amber);">${pc.conditions.join(', ')}</span>` : ''}
       </div></td>
-      <td style="color:var(--text2);">${pc.cls}</td>
+      <td style="color:var(--text2);">${pc.level !== undefined ? pc.cls : (pc.cls?.replace(/\s*\d+$/, '') || '—')}</td>
       <td>
         <div class="pt-hp-bar"><div class="pt-hp-fill${barClass}" style="width:${pct}%;"></div></div>
         <span class="pt-hp-nums">${pc.hp}/${pc.maxHp}</span>
       </td>
       <td style="font-weight:600;">${pc.ac}</td>
-      <td style="color:var(--text2);">${pc.level}</td>
+      <td style="color:var(--text2);">${pc.level ?? pc.cls?.match(/\d+/)?.[0] ?? '—'}</td>
       <td><span class="pt-online-dot ${pc.online ? 'on' : ''}" style="display:none;"></span></td>
       <td>
         <button class="pt-expand-btn" onclick="togglePartyRow(${pc.id})">${isExpanded ? '▲ Hide' : '▼ Sheet'}</button>

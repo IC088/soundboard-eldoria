@@ -235,6 +235,7 @@ class PlayerVolumeControl {
 // =============================================================================
 
 const socket = io();
+window.socket = socket; // expose for sheet tab script
 let playerVolumeControl = null;
 let playerName          = '';
 let gmRoom              = '';   // the GM username / room this player joined

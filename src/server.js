@@ -7,6 +7,40 @@ const multer = require('multer');
 const { setupSession, setupAuthRoutes, requireAuth } = require('./auth');
 const { getPlaylistTracks, addTrackToPlaylist, removeTrackFromPlaylist, reorderPlaylist } = require('./db');
 
+// ── Logger ────────────────────────────────────────────────────────────────────
+const LOG_DIR  = process.env.LOG_DIR || path.join(__dirname, 'logs');
+const LOG_FILE = path.join(LOG_DIR, 'soundboard.log');
+if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true });
+
+const logStream = fs.createWriteStream(LOG_FILE, { flags: 'a' });
+
+function timestamp() {
+  return new Date().toISOString();
+}
+
+function writeLog(level, component, message, extra) {
+  const line = JSON.stringify({
+    ts: timestamp(), level, component, message,
+    ...(extra && typeof extra === 'object' ? extra : extra ? { detail: extra } : {})
+  });
+  logStream.write(line + '\n');
+  // Also print to stdout with colour
+  const colours = { INFO: '\x1b[36m', WARN: '\x1b[33m', ERROR: '\x1b[31m', DEBUG: '\x1b[90m' };
+  const reset = '\x1b[0m';
+  console.log(`${colours[level] || ''}[${level}][${component}]${reset} ${message}${extra ? ' ' + JSON.stringify(extra) : ''}`);
+}
+
+const log = {
+  info:  (component, msg, extra) => writeLog('INFO',  component, msg, extra),
+  warn:  (component, msg, extra) => writeLog('WARN',  component, msg, extra),
+  error: (component, msg, extra) => writeLog('ERROR', component, msg, extra),
+  debug: (component, msg, extra) => writeLog('DEBUG', component, msg, extra),
+};
+
+// Catch unhandled errors and log them
+process.on('uncaughtException',  (err) => log.error('process', 'Uncaught exception', { err: err.message, stack: err.stack }));
+process.on('unhandledRejection', (err) => log.error('process', 'Unhandled rejection', { err: String(err) }));
+
 const app = express();
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
@@ -262,6 +296,7 @@ function handleUpload(req, res, category) {
     category,
     url: `/audio/${category}/${encodeURIComponent(f.filename)}`
   }));
+  log.info('upload', `${category} upload`, { files: uploaded.map(f=>f.filename) });
   io.emit('tracks:updated');
   res.json({ success: true, files: uploaded });
 }
@@ -273,10 +308,107 @@ app.delete('/api/tracks/:category/:filename', requireAuth, (req, res) => {
   const filepath = path.join(AUDIO_DIRS[category], filename);
   if (fs.existsSync(filepath)) {
     fs.unlinkSync(filepath);
+    log.info('upload', `Deleted track`, { category, filename });
     io.emit('tracks:updated');
     res.json({ success: true });
   } else {
     res.status(404).json({ error: 'File not found' });
+  }
+});
+
+// ── Pathbuilder import route ─────────────────────────────────────────────────
+
+app.get('/api/pathbuilder/:id', async (req, res) => {
+  const id = req.params.id.trim();
+  if (!/^[0-9]{4,8}$/.test(id)) return res.status(400).json({ error: 'Invalid Pathbuilder ID' });
+
+  log.info('pathbuilder', `Fetching character ID ${id}`);
+
+  try {
+    let response;
+    try {
+      response = await fetch(`https://pathbuilder2e.com/json.php?id=${id}`, {
+        headers: { 'Accept': 'application/json', 'User-Agent': 'Bards-of-the-Realm/1.0' },
+        signal: AbortSignal.timeout(10000), // 10s timeout
+      });
+    } catch (fetchErr) {
+      log.error('pathbuilder', `Network error fetching ID ${id}`, { err: fetchErr.message });
+      return res.status(502).json({ error: `Could not reach Pathbuilder: ${fetchErr.message}` });
+    }
+
+    log.info('pathbuilder', `Pathbuilder responded`, { status: response.status, id });
+
+    const raw = await response.text();
+    log.debug('pathbuilder', `Raw response (first 200 chars)`, { preview: raw.slice(0, 200) });
+
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch (parseErr) {
+      log.error('pathbuilder', `JSON parse failed`, { id, preview: raw.slice(0, 300) });
+      return res.status(502).json({ error: 'Pathbuilder returned non-JSON response' });
+    }
+
+    if (!data.success || !data.build) {
+      log.warn('pathbuilder', `Character not found or export not public`, { id });
+      return res.status(404).json({ error: 'Character not found — make sure you used Export JSON and the ID is correct' });
+    }
+
+    const b = data.build;
+
+    // Proficiency rank → letter
+    const rankLetter = (n) => ({ 0:'U', 2:'T', 4:'E', 6:'M', 8:'L' }[n] || 'U');
+
+    // Calculate max HP: ancestry HP + (class HP + bonushpPerLevel) × level
+    const maxHp = (b.attributes.ancestryhp || 0)
+      + ((b.attributes.classhp || 0) + (b.attributes.bonushpPerLevel || 0)) * b.level
+      + (b.attributes.bonushp || 0);
+
+    // Skill proficiency map — only include trained+
+    const skillKeys = ['acrobatics','arcana','athletics','crafting','deception','diplomacy',
+      'intimidation','medicine','nature','occultism','performance','religion','society',
+      'stealth','survival','thievery'];
+    const skills = {};
+    skillKeys.forEach(sk => {
+      const rank = b.proficiencies[sk] || 0;
+      if (rank >= 2) skills[sk.charAt(0).toUpperCase() + sk.slice(1)] = rankLetter(rank);
+    });
+    // Include lores
+    (b.lores || []).forEach(([name, rank]) => {
+      if (rank >= 2) skills[name + ' Lore'] = rankLetter(rank);
+    });
+
+    const sheet = {
+      name:       b.name,
+      cls:        b.dualClass ? `${b.class} / ${b.dualClass}` : b.class,
+      level:      b.level,
+      ancestry:   b.ancestry,
+      background: b.background,
+      hp:         maxHp,   // start at full HP
+      maxHp,
+      ac:         b.acTotal?.acTotal || 0,
+      speed:      (b.attributes.speed || 0) + (b.attributes.speedBonus || 0),
+      str:        b.abilities.str,
+      dex:        b.abilities.dex,
+      con:        b.abilities.con,
+      int:        b.abilities.int,
+      wis:        b.abilities.wis,
+      cha:        b.abilities.cha,
+      perception: rankLetter(b.proficiencies.perception || 0),
+      saves: {
+        fort: rankLetter(b.proficiencies.fortitude || 0),
+        ref:  rankLetter(b.proficiencies.reflex    || 0),
+        will: rankLetter(b.proficiencies.will      || 0),
+      },
+      skills,
+      conditions: [],
+    };
+
+    log.info('pathbuilder', `Successfully parsed character`, { name: sheet.name, level: sheet.level, cls: sheet.cls });
+    res.json({ success: true, sheet });
+  } catch (err) {
+    log.error('pathbuilder', 'Unexpected error', { err: err.message, stack: err.stack });
+    res.status(500).json({ error: 'Server error fetching character' });
   }
 });
 
@@ -320,7 +452,7 @@ app.use((err, req, res, next) => {
 
 // ── Socket.IO ─────────────────────────────────────────────────────────────────
 io.on('connection', (socket) => {
-  console.log(`Client connected: ${socket.id}`);
+  log.info('socket', `Client connected`, { socketId: socket.id });
 
   // ── Register ──────────────────────────────────────────────────────────────
   // GM:     { role: 'dm',     name: <username> }
@@ -340,7 +472,7 @@ io.on('connection', (socket) => {
     if (role === 'dm') {
       gmSockets.set(name, socket.id);
       broadcastSessionList();
-      console.log(`[room] GM "${name}" opened session`);
+      log.info('room', `GM opened session`, { gm: name, socketId: socket.id });
     } else {
       playerSyncState.set(socket.id, { syncMode: 'LIVE', pausedAt: null, name: name || socket.id, room: socket.room });
     }
@@ -462,7 +594,7 @@ io.on('connection', (socket) => {
     if (playerSyncState.has(socket.id)) {
       const state = playerSyncState.get(socket.id);
       playerSyncState.set(socket.id, { ...state, syncMode: 'PAUSED', pausedAt: Date.now() });
-      console.log(`Player ${socket.id} paused locally`);
+      log.debug('player', `Local pause`, { socketId: socket.id, name: playerSyncState.get(socket.id)?.name });
       broadcastClientUpdate(socket.room);
     }
   });
@@ -471,7 +603,7 @@ io.on('connection', (socket) => {
     if (playerSyncState.has(socket.id)) {
       const state = playerSyncState.get(socket.id);
       playerSyncState.set(socket.id, { ...state, syncMode: 'LIVE', pausedAt: null });
-      console.log(`Player ${socket.id} rejoining live`);
+      log.debug('player', `Rejoining live`, { socketId: socket.id });
       const r = getRoom(socket.room);
       socket.emit('player:rejoin:state', getLiveState(r));
       broadcastClientUpdate(socket.room);
@@ -544,7 +676,7 @@ io.on('connection', (socket) => {
       }
     });
 
-    console.log(`[dice][${socket.room}] ${rollerName} rolled ${pool.map(p => `${p.count}d${p.sides}`).join('+')} = ${total} (${visibility})`);
+    log.info('dice', `Roll by ${rollerName}`, { room: socket.room, roll: pool.map(p=>`${p.count}d${p.sides}`).join('+'), total, visibility, dc: dc||null, dos });
   });
 
   socket.on('dice:history:request', ({ character }) => {
@@ -575,19 +707,22 @@ io.on('connection', (socket) => {
       // Notify players in this room that the GM went offline
       io.to(socket.room).emit('gm:offline');
       broadcastSessionList();
-      console.log(`[room] GM "${socket.playerName}" closed session`);
+      log.info('room', `GM closed session`, { gm: socket.playerName });
     } else {
       playerSyncState.delete(socket.id);
       if (socket.room) broadcastClientUpdate(socket.room);
     }
-    console.log(`Client disconnected: ${socket.id}`);
+    log.info('socket', `Client disconnected`, { socketId: socket.id });
   });
 });
 
 
 // ── Start ─────────────────────────────────────────────────────────────────────
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`🎵 Soundboard server running on http://localhost:${PORT}`);
-  console.log(`   GM View:     http://localhost:${PORT}`);
-  console.log(`   Player View: http://localhost:${PORT}/player.html`);
+  log.info('server', `Soundboard started on port ${PORT}`);
+  log.info('server', `GM View:     http://localhost:${PORT}`);
+  log.info('server', `Player View: http://localhost:${PORT}/player.html`);
+  log.info('server', `Log file:    ${LOG_FILE}`);
+  console.log(`\n🎵 Bards of the Realm running on http://localhost:${PORT}`);
+  console.log(`   Logs → ${LOG_FILE}\n`);
 });

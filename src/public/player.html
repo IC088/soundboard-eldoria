@@ -696,6 +696,43 @@
     .dice-hist-time   { font-size: 0.72em; color: var(--text3); white-space: nowrap; }
     .dice-sec-label { font-size: 0.7em; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); margin-bottom: 6px; }
 
+    /* ── SHEET TAB ── */
+    .sheet-layout { padding: 14px; max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; height: 100%; }
+    .sheet-import-card { background: var(--bg2); border: 1px solid var(--border2); border-radius: 12px; padding: 16px; }
+    .sheet-import-title { font-weight: 600; font-size: 0.92em; margin-bottom: 6px; }
+    .sheet-import-sub { font-size: 0.8em; color: var(--text2); margin-bottom: 12px; line-height: 1.5; }
+    .sheet-import-row { display: flex; gap: 8px; }
+    .sheet-header { display: flex; align-items: center; gap: 12px; background: var(--bg2); border: 1px solid var(--border2); border-radius: 12px; padding: 14px; }
+    .sheet-avatar { width: 42px; height: 42px; border-radius: 10px; background: var(--accent-bg); border: 1px solid var(--accent2); display: flex; align-items: center; justify-content: center; font-size: 1.2em; font-weight: 700; color: var(--accent); flex-shrink: 0; }
+    .sheet-name { font-size: 1.05em; font-weight: 700; color: var(--text); }
+    .sheet-sub  { font-size: 0.78em; color: var(--text2); margin-top: 2px; }
+    .sheet-hp-block { margin-left: auto; text-align: center; }
+    .sheet-ability-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+    .sheet-ability { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 4px; text-align: center; }
+    .sheet-ability-label { font-size: 0.65em; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; }
+    .sheet-ability-val   { font-size: 1em; font-weight: 700; margin: 2px 0; }
+    .sheet-ability-mod   { font-size: 0.7em; color: var(--text2); }
+    .sheet-stats-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .sheet-stat { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; text-align: center; flex: 1; min-width: 60px; }
+    .sheet-stat-label { font-size: 0.65em; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; }
+    .sheet-stat-val   { font-size: 1em; font-weight: 700; margin-top: 2px; }
+    .sheet-section-label { font-size: 0.72em; color: var(--text3); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 600; margin-top: 4px; }
+    .sheet-saves-row { display: flex; gap: 6px; }
+    .sheet-save { flex: 1; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 6px; text-align: center; }
+    .sheet-save-label { font-size: 0.65em; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; }
+    .sheet-save-val   { font-size: 0.85em; font-weight: 600; margin-top: 2px; }
+    .sheet-save-val.T { color: #9b93f0; }
+    .sheet-save-val.E { color: #3dd4b0; }
+    .sheet-save-val.M { color: #f0be58; }
+    .sheet-save-val.L { color: #f08080; }
+    .sheet-skills-grid { display: flex; flex-wrap: wrap; gap: 4px; }
+    .sheet-skill-badge { font-size: 0.72em; padding: 3px 9px; border-radius: 12px; border: 1px solid var(--border2); color: var(--text2); background: var(--bg2); }
+    .sheet-skill-badge.T { border-color: #534ab7; color: #9b93f0; }
+    .sheet-skill-badge.E { border-color: #17876b; color: #3dd4b0; }
+    .sheet-skill-badge.M { border-color: #ba7517; color: #f0be58; }
+    .sheet-skill-badge.L { border-color: #e24b4a; color: #f08080; }
+    .sheet-conditions { display: flex; flex-wrap: wrap; gap: 4px; }
+
     /* ── PULSE ANIMATION ── */
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.45} }
     .pulse { animation: pulse 2s infinite; }
@@ -987,12 +1024,70 @@
         </div>
       </div>
 
-      <!-- SHEET TAB (placeholder) -->
+      <!-- SHEET TAB -->
       <div class="tab-page" id="tab-sheet">
-        <div class="coming-soon">
-          <div class="coming-soon-icon">&#128100;</div>
-          <h3>Character sheet</h3>
-          <p>Coming soon &mdash; Pathbuilder import, quick roll shortcuts.</p>
+        <div class="sheet-layout">
+
+          <!-- Import section -->
+          <div class="sheet-import-card">
+            <div class="sheet-import-title">&#127381; Import from Pathbuilder 2e</div>
+            <div class="sheet-import-sub">
+              In Pathbuilder, open the burger menu &rsaquo; <strong>Export JSON</strong>. You'll get a 6-digit ID. Paste it below.
+            </div>
+            <div class="sheet-import-row">
+              <input class="login-card input[type=text]" type="text" id="pb-id-input"
+                placeholder="e.g. 122550" maxlength="8"
+                style="flex:1;padding:10px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-size:1em;outline:none;"
+                oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+              >
+              <button id="pb-import-btn" onclick="importFromPathbuilder()" style="padding:10px 18px;background:var(--accent2);border:none;border-radius:8px;color:#fff;font-weight:600;cursor:pointer;white-space:nowrap;">
+                Load character
+              </button>
+            </div>
+            <div id="pb-status" style="font-size:0.82em;margin-top:6px;min-height:1.2em;"></div>
+          </div>
+
+          <!-- Character sheet display -->
+          <div id="sheet-display" style="display:none;">
+            <div class="sheet-header">
+              <div class="sheet-avatar" id="sheet-avatar">?</div>
+              <div>
+                <div class="sheet-name" id="sheet-name">—</div>
+                <div class="sheet-sub"  id="sheet-sub">—</div>
+              </div>
+              <div class="sheet-hp-block">
+                <div style="font-size:0.72em;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;">HP</div>
+                <div style="display:flex;align-items:center;gap:4px;">
+                  <input id="sheet-hp-cur" type="number" min="0"
+                    style="width:52px;padding:4px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-size:1em;text-align:center;"
+                    oninput="updateSheetHp()">
+                  <span style="color:var(--text3);">/</span>
+                  <span id="sheet-hp-max" style="font-weight:600;"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Six ability scores -->
+            <div class="sheet-ability-grid" id="sheet-abilities"></div>
+
+            <!-- Key stats row -->
+            <div class="sheet-stats-row" id="sheet-stats"></div>
+
+            <!-- Saves -->
+            <div class="sheet-section-label">Saving Throws</div>
+            <div class="sheet-saves-row" id="sheet-saves"></div>
+
+            <!-- Skills -->
+            <div class="sheet-section-label">Skills <span style="font-size:0.8em;font-weight:400;color:var(--text3);">(trained+)</span></div>
+            <div class="sheet-skills-grid" id="sheet-skills"></div>
+
+            <!-- Conditions -->
+            <div class="sheet-section-label">Conditions</div>
+            <div class="sheet-conditions" id="sheet-conditions"></div>
+
+            <button id="sheet-push-btn" onclick="pushSheetToGM()" style="width:100%;margin-top:14px;padding:10px;background:var(--green);border:none;border-radius:8px;color:#fff;font-weight:600;cursor:pointer;font-size:0.9em;">&#9654; Push sheet to GM</button>
+          </div>
+
         </div>
       </div>
 
@@ -1130,6 +1225,159 @@
     function setAvatarInitial(name) {
       document.getElementById('player-avatar').textContent = name.charAt(0).toUpperCase();
     }
+  </script>
+  <script>
+// ============================================================================
+// Sheet tab — Pathbuilder import + push to GM
+// ============================================================================
+let loadedSheet = null;
+
+const profLabel = { U:'Untrained', T:'Trained', E:'Expert', M:'Master', L:'Legendary' };
+const abilityMod = score => { const m = Math.floor((score-10)/2); return (m>=0?'+':'')+m; };
+
+async function importFromPathbuilder() {
+  const id  = document.getElementById('pb-id-input').value.trim();
+  const status = document.getElementById('pb-status');
+  const btn = document.getElementById('pb-import-btn');
+  if (!id) { status.style.color='var(--red)'; status.textContent='Please enter your Pathbuilder export ID.'; return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Loading…';
+  status.style.color = 'var(--text3)';
+  status.textContent = 'Fetching character from Pathbuilder…';
+
+  try {
+    const res  = await fetch(`/api/pathbuilder/${id}`);
+    const data = await res.json();
+    if (!data.success) {
+      status.style.color = 'var(--red)';
+      status.textContent = data.error || 'Failed to load character.';
+      return;
+    }
+    loadedSheet = data.sheet;
+    localStorage.setItem('pb_sheet', JSON.stringify(loadedSheet));
+    localStorage.setItem('pb_id', id);
+    renderSheet(loadedSheet);
+    status.style.color = 'var(--green)';
+    status.textContent = `✓ Loaded ${loadedSheet.name} (Level ${loadedSheet.level} ${loadedSheet.cls})`;
+  } catch(e) {
+    status.style.color = 'var(--red)';
+    status.textContent = 'Network error — check your connection.';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Load character';
+  }
+}
+
+function renderSheet(sheet) {
+  document.getElementById('sheet-display').style.display = 'block';
+  document.getElementById('sheet-avatar').textContent = sheet.name[0].toUpperCase();
+  document.getElementById('sheet-name').textContent = sheet.name;
+  document.getElementById('sheet-sub').textContent  = `${sheet.cls} ${sheet.level} · ${sheet.ancestry || ''}`;
+
+  // HP
+  document.getElementById('sheet-hp-cur').value = sheet.hp;
+  document.getElementById('sheet-hp-max').textContent = sheet.maxHp;
+
+  // Abilities
+  const abilities = document.getElementById('sheet-abilities');
+  abilities.innerHTML = ['str','dex','con','int','wis','cha'].map(a => `
+    <div class="sheet-ability">
+      <div class="sheet-ability-label">${a.toUpperCase()}</div>
+      <div class="sheet-ability-val">${sheet[a] ?? '—'}</div>
+      <div class="sheet-ability-mod">${sheet[a] ? abilityMod(sheet[a]) : ''}</div>
+    </div>`).join('');
+
+  // Key stats
+  document.getElementById('sheet-stats').innerHTML = [
+    { label:'AC',    val: sheet.ac },
+    { label:'Speed', val: sheet.speed + ' ft' },
+    { label:'Perc',  val: sheet.perception ? profLabel[sheet.perception] : '—' },
+  ].map(s => `<div class="sheet-stat"><div class="sheet-stat-label">${s.label}</div><div class="sheet-stat-val">${s.val}</div></div>`).join('');
+
+  // Saves
+  const saves = sheet.saves || {};
+  document.getElementById('sheet-saves').innerHTML = [
+    { label:'Fortitude', key:'fort' },
+    { label:'Reflex',    key:'ref'  },
+    { label:'Will',      key:'will' },
+  ].map(s => `<div class="sheet-save">
+    <div class="sheet-save-label">${s.label}</div>
+    <div class="sheet-save-val ${saves[s.key] || ''}">${saves[s.key] ? profLabel[saves[s.key]] : '—'}</div>
+  </div>`).join('');
+
+  // Skills
+  const skills = sheet.skills || {};
+  document.getElementById('sheet-skills').innerHTML = Object.entries(skills).length
+    ? Object.entries(skills).map(([name, rank]) =>
+        `<span class="sheet-skill-badge ${rank}">${name} (${rank})</span>`).join('')
+    : '<span style="font-size:0.8em;color:var(--text3);">None trained</span>';
+
+  // Conditions
+  renderSheetConditions();
+}
+
+function renderSheetConditions() {
+  if (!loadedSheet) return;
+  const el = document.getElementById('sheet-conditions');
+  el.innerHTML = (loadedSheet.conditions || []).map(c =>
+    `<span class="condition-tag">${c}<span class="remove-c" onclick="removeSheetCondition('${c}')">&#215;</span></span>`
+  ).join('') + `<button class="add-condition-btn" onclick="addSheetCondition()">+ add</button>`;
+}
+
+function addSheetCondition() {
+  const c = prompt('Condition (e.g. Frightened 2):');
+  if (!c || !loadedSheet) return;
+  loadedSheet.conditions.push(c.trim());
+  renderSheetConditions();
+}
+function removeSheetCondition(c) {
+  if (!loadedSheet) return;
+  loadedSheet.conditions = loadedSheet.conditions.filter(x=>x!==c);
+  renderSheetConditions();
+}
+function updateSheetHp() {
+  if (!loadedSheet) return;
+  loadedSheet.hp = Number(document.getElementById('sheet-hp-cur').value) || 0;
+}
+
+function pushSheetToGM() {
+  if (!loadedSheet) return;
+  updateSheetHp();
+  // socket is defined by player.js — use window.socket if available
+  const sock = window.socket || (typeof socket !== 'undefined' ? socket : null);
+  if (!sock || !sock.connected) {
+    const status = document.getElementById('pb-status');
+    status.style.color = 'var(--red)';
+    status.textContent = 'Not connected — join a GM session first (Audio tab).';
+    return;
+  }
+  sock.emit('party:sheet:update', loadedSheet);
+  const btn = document.getElementById('sheet-push-btn');
+  if (btn) {
+    btn.textContent = '✓ Sent to GM!';
+    setTimeout(() => { btn.textContent = '▶ Push sheet to GM'; }, 2000);
+  }
+  const status = document.getElementById('pb-status');
+  status.style.color = 'var(--green)';
+  status.textContent = `✓ Sheet pushed to GM as ${loadedSheet.name}`;
+  setTimeout(() => { status.textContent = ''; }, 3000);
+}
+
+// Restore saved sheet on load
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('pb_sheet');
+  const savedId = localStorage.getItem('pb_id');
+  if (saved) {
+    try {
+      loadedSheet = JSON.parse(saved);
+      if (savedId) document.getElementById('pb-id-input').value = savedId;
+      renderSheet(loadedSheet);
+      document.getElementById('pb-status').textContent = `✓ ${loadedSheet.name} loaded from last session`;
+      document.getElementById('pb-status').style.color = 'var(--text3)';
+    } catch(e) { localStorage.removeItem('pb_sheet'); }
+  }
+});
   </script>
   <script src="/player.js"></script>
   <script src="/dice.js"></script>

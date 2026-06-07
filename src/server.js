@@ -552,6 +552,16 @@ io.on('connection', (socket) => {
     socket.emit('dice:history', { character, rolls: r.rollHistory.get(character) || [] });
   });
 
+  // ── Party sheet updates from players ──────────────────────────────────────
+  socket.on('party:sheet:update', (data) => {
+    // Broadcast to GM in this room
+    const roomSockets = io.sockets.adapter.rooms.get(socket.room) || new Set();
+    roomSockets.forEach(sid => {
+      const s = io.sockets.sockets.get(sid);
+      if (s && s.role === 'dm') s.emit('party:sheet:update', { ...data, name: socket.playerName || data.name });
+    });
+  });
+
   socket.on('dice:feed:request', () => {
     const r = getRoom(socket.room);
     socket.emit('dice:feed', r.sessionFeed);

@@ -472,6 +472,107 @@
     .modal-opt-sub   { font-size: 0.75em; color: var(--text2); }
     .modal-cancel { margin-top: 14px; width: 100%; }
 
+    /* ── DICE FAB + OVERLAY ── */
+    .dice-fab {
+      position: absolute; bottom: 24px; right: 24px; z-index: 50;
+      width: 52px; height: 52px; border-radius: 50%;
+      background: var(--accent2); border: 2px solid var(--accent);
+      color: #fff; font-size: 1.4em; cursor: pointer;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center;
+      transition: transform 0.15s, background 0.15s;
+    }
+    .dice-fab:hover { transform: scale(1.1); background: var(--accent); }
+    .dice-fab.open  { background: var(--bg3); border-color: var(--border2); }
+
+    .dice-overlay {
+      position: absolute; bottom: 0; left: 0; right: 0; z-index: 40;
+      background: var(--bg2); border-top: 1px solid var(--border2);
+      transform: translateY(100%); transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+      max-height: 54vh; display: flex; flex-direction: column;
+      box-shadow: 0 -8px 32px rgba(0,0,0,0.4);
+    }
+    .dice-overlay.open { transform: translateY(0); }
+    .dice-overlay-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .dice-overlay-close {
+      background: none; border: none; color: var(--text3); font-size: 1.2em;
+      cursor: pointer; padding: 0 4px; border-radius: 4px; margin-left: 6px;
+    }
+    .dice-overlay-close:hover { color: var(--text); background: var(--bg3); }
+    .dice-overlay-body {
+      display: flex; gap: 14px; padding: 12px 16px; overflow: hidden; flex: 1;
+    }
+    .dice-ov-col { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+
+    /* ── OVERWORLD SIDE PANEL ── */
+    .ow-panel-toggle {
+      margin-left: auto; background: var(--bg3); border: 1px solid var(--border2);
+      color: var(--text2); padding: 3px 8px; border-radius: 6px; cursor: pointer;
+      font-size: 0.85em;
+    }
+    .ow-panel-toggle:hover { border-color: var(--accent2); color: var(--accent); }
+    .ow-side-panel {
+      position: absolute; top: 44px; right: -300px; width: 280px;
+      bottom: 0; background: var(--bg2); border-left: 1px solid var(--border2);
+      z-index: 20; display: flex; flex-direction: column;
+      transition: right 0.25s cubic-bezier(0.4,0,0.2,1);
+      box-shadow: -6px 0 24px rgba(0,0,0,0.3);
+    }
+    .ow-side-panel.open { right: 0; }
+    .ow-side-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .ow-side-body { flex: 1; overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+
+    /* ── PARTY TABLE ── */
+    .party-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .party-table-wrap { flex: 1; overflow-y: auto; }
+    .party-table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+    .party-table thead th { padding: 8px 10px; text-align: left; color: var(--text3); font-size: 0.78em; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg2); z-index: 2; }
+    .party-table tbody tr { border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.12s; }
+    .party-table tbody tr:hover { background: var(--bg3); }
+    .party-table tbody tr.expanded { background: var(--bg3); }
+    .party-table td { padding: 8px 10px; vertical-align: middle; }
+    .pt-online-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text3); display: inline-block; }
+    .pt-online-dot.on { background: var(--green); }
+    .pt-avatar { width: 26px; height: 26px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.78em; font-weight: 700; flex-shrink: 0; }
+    .pt-name { font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; }
+    .pt-hp-bar { width: 80px; height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 6px; }
+    .pt-hp-fill { height: 100%; background: var(--green); border-radius: 3px; transition: width 0.3s; }
+    .pt-hp-fill.low  { background: var(--amber); }
+    .pt-hp-fill.crit { background: var(--red); }
+    .pt-hp-nums { font-size: 0.82em; color: var(--text2); }
+    .pt-expand-btn { background: none; border: 1px solid var(--border2); border-radius: 4px; color: var(--text3); cursor: pointer; padding: 2px 6px; font-size: 0.75em; }
+    .pt-expand-btn:hover { border-color: var(--accent2); color: var(--accent); }
+
+    /* Expanded detail row */
+    .party-detail-row { background: var(--bg3) !important; cursor: default !important; }
+    .party-detail-row:hover { background: var(--bg3) !important; }
+    .party-detail-cell { padding: 12px 16px !important; }
+    .pd-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 12px; }
+    .pd-stat { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 4px; text-align: center; }
+    .pd-stat-label { font-size: 0.68em; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px; }
+    .pd-stat-val   { font-size: 1.1em; font-weight: 700; color: var(--text); }
+    .pd-stat-mod   { font-size: 0.72em; color: var(--text2); margin-top: 1px; }
+    .pd-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+    .pd-field { display: flex; flex-direction: column; gap: 2px; }
+    .pd-field label { font-size: 0.7em; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; }
+    .pd-field span  { font-size: 0.88em; color: var(--text); font-weight: 500; }
+    .pd-profs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+    .pd-prof-badge { font-size: 0.7em; padding: 2px 8px; border-radius: 12px; border: 1px solid var(--border2); color: var(--text2); background: var(--bg2); }
+    .pd-prof-badge.T { border-color: #534ab7; color: #9b93f0; }
+    .pd-prof-badge.E { border-color: #17876b; color: #3dd4b0; }
+    .pd-prof-badge.M { border-color: #ba7517; color: #f0be58; }
+    .pd-prof-badge.L { border-color: #e24b4a; color: #f08080; }
+    .pd-conditions { display: flex; flex-wrap: wrap; gap: 4px; }
+    .pd-actions { display: flex; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+    .hp-quick { display: flex; align-items: center; gap: 4px; }
+    .hp-quick input { width: 52px; padding: 3px 6px; }
+
     /* ── TOAST ── */
     .toast-wrap { position: fixed; bottom: 20px; right: 20px; z-index: 999; display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
     .toast { background: var(--bg2); border: 1px solid var(--border2); border-radius: 8px; padding: 10px 16px; font-size: 0.85em; animation: slideIn 0.25s ease; }
@@ -554,9 +655,8 @@
     <span class="gm-badge">GM</span>
     <div class="topbar-tabs">
       <div class="tab active" data-tab="audio"     onclick="switchTab('audio')">&#9835; Audio</div>
-      <div class="tab"        data-tab="dice"      onclick="switchTab('dice')">&#9861; Dice</div>
+      <div class="tab"        data-tab="battle"    onclick="switchTab('battle')">&#9876; Battle</div>
       <div class="tab"        data-tab="overworld" onclick="switchTab('overworld')">&#11043; Overworld</div>
-      <div class="tab"        data-tab="battle"    onclick="switchTab('battle')">&#9633; Battle map</div>
       <div class="tab"        data-tab="party"     onclick="switchTab('party')">&#128100; Party</div>
     </div>
     <div class="topbar-status">
@@ -703,105 +803,9 @@
       </div><!-- /audio -->
 
       <!-- ── DICE TAB ── -->
-      <div class="tab-page" id="tab-dice">
-        <div class="dice-layout">
-
-          <!-- Left: Roll builder -->
-          <div>
-            <div class="sec-label">Select dice</div>
-            <div class="die-row">
-              <div class="die-btn" onclick="addDie(4)"><span>d4</span><span class="die-btn-sub" id="die-count-4"></span></div>
-              <div class="die-btn" onclick="addDie(6)"><span>d6</span><span class="die-btn-sub" id="die-count-6"></span></div>
-              <div class="die-btn" onclick="addDie(8)"><span>d8</span><span class="die-btn-sub" id="die-count-8"></span></div>
-              <div class="die-btn" onclick="addDie(10)"><span>d10</span><span class="die-btn-sub" id="die-count-10"></span></div>
-              <div class="die-btn" onclick="addDie(12)"><span>d12</span><span class="die-btn-sub" id="die-count-12"></span></div>
-              <div class="die-btn" onclick="addDie(20)"><span>d20</span><span class="die-btn-sub" id="die-count-20"></span></div>
-              <div class="die-btn" onclick="addDie(100)"><span>d%</span><span class="die-btn-sub" id="die-count-100"></span></div>
-            </div>
-
-            <div class="sec-label">Pool</div>
-            <div class="pool-list" id="gm-pool-list"><div class="pool-empty">Click a die to add it</div></div>
-
-            <div class="sec-label">Modifiers (PF2e)</div>
-            <div class="mod-rows">
-              <div class="mod-row"><span class="mod-tag prof">Prof</span><input class="num-input mod-input" id="gm-mod-prof" type="number" value="0"><span style="font-size:0.75em;color:var(--text3);">proficiency</span></div>
-              <div class="mod-row"><span class="mod-tag item">Item</span><input class="num-input mod-input" id="gm-mod-item" type="number" value="0"><span style="font-size:0.75em;color:var(--text3);">item bonus</span></div>
-              <div class="mod-row"><span class="mod-tag status">Status</span><input class="num-input mod-input" id="gm-mod-status" type="number" value="0"></div>
-              <div class="mod-row"><span class="mod-tag circ">Circ</span><input class="num-input mod-input" id="gm-mod-circ" type="number" value="0"></div>
-              <div class="mod-total-row">Total modifier: <span id="gm-mod-total">+0</span></div>
-            </div>
-
-            <div class="sec-label">Label &amp; DC</div>
-            <div class="dice-label-row">
-              <input class="txt-input" id="gm-roll-label" placeholder="e.g. Kael Perception" style="width:100%;">
-              <input class="num-input" id="gm-roll-dc" placeholder="DC" style="width:100%;">
-            </div>
-
-            <div class="sec-label">Roll as</div>
-            <div class="roll-mode">
-              <button class="roll-mode-btn active secret" data-mode="secret" onclick="setRollMode('secret')">GM secret</button>
-              <button class="roll-mode-btn npc"           data-mode="npc"    onclick="setRollMode('npc')">Public NPC</button>
-            </div>
-            <input class="txt-input" id="gm-npc-name" placeholder="NPC name (for public rolls)" style="width:100%;margin-bottom:10px;display:none;">
-
-            <button id="gm-roll-btn" onclick="gmRoll()" disabled>Select dice above</button>
-          </div>
-
-          <!-- Right: Tray + full feed -->
-          <div style="display:flex;flex-direction:column;gap:10px;">
-            <div class="sec-label">Roll result</div>
-            <div class="dice-3d-wrap"><div id="gm-dice-3d"></div></div>
-            <div class="gm-result-card" id="gm-tray">
-              <div class="gm-dos-label" id="gm-dos-label"></div>
-              <div class="gm-total" id="gm-total">&mdash;</div>
-              <div class="gm-formula" id="gm-formula">Select dice and roll</div>
-              <span class="nat-pill" id="gm-nat-pill"></span>
-            </div>
-            <div class="sec-label">Full roll feed <span style="font-size:0.85em;font-weight:400;color:var(--text3);">— GM sees all</span></div>
-            <div class="card" style="flex:1;overflow-y:auto;max-height:420px;">
-              <div id="gm-feed-list"><div class="feed-empty">No rolls yet this session</div></div>
-            </div>
-          </div>
-
-        </div>
-      </div><!-- /dice -->
-
-      <!-- ── OVERWORLD TAB ── -->
-      <div class="tab-page" id="tab-overworld">
-        <div class="overworld-layout">
-          <div class="map-toolbar">
-            <button class="tool-btn active" id="tool-terrain" onclick="setTool('terrain')">&#9670; Terrain</button>
-            <button class="tool-btn" id="tool-marker"  onclick="setTool('marker')">&#128205; Marker</button>
-            <button class="tool-btn" id="tool-fog"     onclick="setTool('fog')">&#9729; Fog</button>
-            <button class="tool-btn" id="tool-party"   onclick="setTool('party')">&#9650; Party pos.</button>
-            <div class="tool-sep"></div>
-            <div class="terrain-swatches" id="terrain-swatches">
-              <div class="t-swatch active" style="background:#9FE1CB;" data-terrain="desert"  title="Desert"  onclick="setTerrain(this)"></div>
-              <div class="t-swatch" style="background:#B5D4F4;" data-terrain="water"   title="Water"   onclick="setTerrain(this)"></div>
-              <div class="t-swatch" style="background:#C0DD97;" data-terrain="scrub"   title="Scrub"   onclick="setTerrain(this)"></div>
-              <div class="t-swatch" style="background:#FAC775;" data-terrain="rock"    title="Rock"    onclick="setTerrain(this)"></div>
-              <div class="t-swatch" style="background:#D3D1C7;" data-terrain="road"    title="Road"    onclick="setTerrain(this)"></div>
-              <div class="t-swatch" style="background:#2C2C2A;" data-terrain="hidden"  title="Hidden"  onclick="setTerrain(this)"></div>
-            </div>
-            <div class="tool-sep"></div>
-            <span style="font-size:0.75em;color:var(--text2);">Hex size:</span>
-            <input type="number" class="num-input" id="hex-size" value="40" min="20" max="80" style="width:52px;" oninput="setHexSize(this.value)">
-            <button class="btn green" onclick="syncMapToPlayers()">&#9654; Sync to players</button>
-          </div>
-          <div class="map-canvas-wrap">
-            <canvas id="overworld-canvas"></canvas>
-            <div class="map-placeholder" id="ow-placeholder">
-              <div class="map-placeholder-icon">&#11043;</div>
-              <div style="font-size:0.85em;">Hex overworld map — click to paint terrain</div>
-              <div style="font-size:0.75em;">GM sees all · players see only revealed hexes</div>
-            </div>
-          </div>
-        </div>
-      </div><!-- /overworld -->
-
-      <!-- ── BATTLE MAP TAB ── -->
-      <div class="tab-page" id="tab-battle">
-        <div class="battle-layout">
+      <!-- ── BATTLE TAB (full canvas + floating dice overlay) ── -->
+      <div class="tab-page" id="tab-battle" style="position:relative;overflow:hidden;">
+        <div class="battle-layout" style="height:100%;">
           <div class="battle-toolbar">
             <button class="tool-btn active" id="btool-select" onclick="setBTool('select')">&#9654; Select</button>
             <button class="tool-btn" id="btool-token"  onclick="setBTool('token')">&#9711; Token</button>
@@ -826,16 +830,153 @@
             </div>
           </div>
         </div>
+
+        <!-- Floating dice button -->
+        <button class="dice-fab" id="dice-fab" onclick="toggleDiceOverlay()" title="Open dice roller">&#9861;</button>
+
+        <!-- Dice overlay panel (slides up from bottom) -->
+        <div class="dice-overlay" id="dice-overlay">
+          <div class="dice-overlay-header">
+            <span style="font-weight:600;font-size:0.9em;">&#9861; Dice Roller</span>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <button class="roll-mode-btn active secret" data-mode="secret" onclick="setRollMode('secret')">GM secret</button>
+              <button class="roll-mode-btn npc"           data-mode="npc"    onclick="setRollMode('npc')">Public NPC</button>
+              <input class="txt-input" id="gm-npc-name" placeholder="NPC name" style="width:110px;padding:3px 8px;display:none;">
+              <button class="dice-overlay-close" onclick="toggleDiceOverlay()">&#215;</button>
+            </div>
+          </div>
+          <div class="dice-overlay-body">
+            <!-- Left col: die picker + modifiers + label -->
+            <div class="dice-ov-col">
+              <div class="die-row">
+                <div class="die-btn" onclick="addDie(4)"><span>d4</span><span class="die-btn-sub" id="die-count-4"></span></div>
+                <div class="die-btn" onclick="addDie(6)"><span>d6</span><span class="die-btn-sub" id="die-count-6"></span></div>
+                <div class="die-btn" onclick="addDie(8)"><span>d8</span><span class="die-btn-sub" id="die-count-8"></span></div>
+                <div class="die-btn" onclick="addDie(10)"><span>d10</span><span class="die-btn-sub" id="die-count-10"></span></div>
+                <div class="die-btn" onclick="addDie(12)"><span>d12</span><span class="die-btn-sub" id="die-count-12"></span></div>
+                <div class="die-btn" onclick="addDie(20)"><span>d20</span><span class="die-btn-sub" id="die-count-20"></span></div>
+                <div class="die-btn" onclick="addDie(100)"><span>d%</span><span class="die-btn-sub" id="die-count-100"></span></div>
+              </div>
+              <div class="pool-list" id="gm-pool-list"><div class="pool-empty">Click a die to add it</div></div>
+              <div class="mod-rows" style="margin-top:8px;">
+                <div class="mod-row"><span class="mod-tag prof">Prof</span><input class="num-input mod-input" id="gm-mod-prof" type="number" value="0"></div>
+                <div class="mod-row"><span class="mod-tag item">Item</span><input class="num-input mod-input" id="gm-mod-item" type="number" value="0"></div>
+                <div class="mod-row"><span class="mod-tag status">Status</span><input class="num-input mod-input" id="gm-mod-status" type="number" value="0"></div>
+                <div class="mod-row"><span class="mod-tag circ">Circ</span><input class="num-input mod-input" id="gm-mod-circ" type="number" value="0"></div>
+                <div class="mod-total-row">Modifier: <span id="gm-mod-total">+0</span></div>
+              </div>
+              <div style="display:flex;gap:6px;margin-top:8px;">
+                <input class="txt-input" id="gm-roll-label" placeholder="Label (e.g. Perception)" style="flex:1;">
+                <input class="num-input" id="gm-roll-dc" placeholder="DC" style="width:60px;">
+              </div>
+              <button id="gm-roll-btn" onclick="gmRoll()" disabled style="margin-top:8px;width:100%;">Select dice above</button>
+            </div>
+            <!-- Middle col: result tray + 3D -->
+            <div class="dice-ov-col" style="min-width:180px;">
+              <div class="dice-3d-wrap"><div id="gm-dice-3d"></div></div>
+              <div class="gm-result-card" id="gm-tray">
+                <div class="gm-dos-label" id="gm-dos-label"></div>
+                <div class="gm-total" id="gm-total">&mdash;</div>
+                <div class="gm-formula" id="gm-formula">Select dice and roll</div>
+                <span class="nat-pill" id="gm-nat-pill"></span>
+              </div>
+            </div>
+            <!-- Right col: feed + initiative -->
+            <div class="dice-ov-col" style="flex:1.2;overflow:hidden;display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <span class="sec-label" style="margin:0;">Roll feed</span>
+                <button class="btn" style="padding:2px 8px;font-size:0.72em;" onclick="rollInitiative()">Roll initiative</button>
+              </div>
+              <div class="card" style="flex:1;overflow-y:auto;">
+                <div id="gm-feed-list"><div class="feed-empty">No rolls yet</div></div>
+              </div>
+              <div class="sec-label" style="margin:0;">Initiative</div>
+              <div class="card" id="rp-initiative" style="max-height:160px;overflow-y:auto;">
+                <div class="c-row" style="color:var(--text3);font-size:0.78em;">No initiative set</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div><!-- /battle -->
 
-      <!-- ── PARTY TAB ── -->
+      <!-- ── OVERWORLD TAB (full canvas + collapsible dice history panel) ── -->
+      <div class="tab-page" id="tab-overworld" style="position:relative;overflow:hidden;">
+        <div class="overworld-layout" style="height:100%;">
+          <div class="map-toolbar">
+            <button class="tool-btn active" id="tool-terrain" onclick="setTool('terrain')">&#9670; Terrain</button>
+            <button class="tool-btn" id="tool-marker"  onclick="setTool('marker')">&#128205; Marker</button>
+            <button class="tool-btn" id="tool-fog"     onclick="setTool('fog')">&#9729; Fog</button>
+            <button class="tool-btn" id="tool-party"   onclick="setTool('party')">&#9650; Party pos.</button>
+            <div class="tool-sep"></div>
+            <div class="terrain-swatches" id="terrain-swatches">
+              <div class="t-swatch active" style="background:#9FE1CB;" data-terrain="desert"  title="Desert"  onclick="setTerrain(this)"></div>
+              <div class="t-swatch" style="background:#B5D4F4;" data-terrain="water"   title="Water"   onclick="setTerrain(this)"></div>
+              <div class="t-swatch" style="background:#C0DD97;" data-terrain="scrub"   title="Scrub"   onclick="setTerrain(this)"></div>
+              <div class="t-swatch" style="background:#FAC775;" data-terrain="rock"    title="Rock"    onclick="setTerrain(this)"></div>
+              <div class="t-swatch" style="background:#D3D1C7;" data-terrain="road"    title="Road"    onclick="setTerrain(this)"></div>
+              <div class="t-swatch" style="background:#2C2C2A;" data-terrain="hidden"  title="Hidden"  onclick="setTerrain(this)"></div>
+            </div>
+            <div class="tool-sep"></div>
+            <span style="font-size:0.75em;color:var(--text2);">Hex size:</span>
+            <input type="number" class="num-input" id="hex-size" value="40" min="20" max="80" style="width:52px;" oninput="setHexSize(this.value)">
+            <button class="btn green" onclick="syncMapToPlayers()">&#9654; Sync to players</button>
+            <button class="ow-panel-toggle" id="ow-panel-toggle" onclick="toggleOwPanel()" title="Toggle roll history">&#9861;</button>
+          </div>
+          <div class="map-canvas-wrap" id="ow-canvas-wrap">
+            <canvas id="overworld-canvas"></canvas>
+            <div class="map-placeholder" id="ow-placeholder">
+              <div class="map-placeholder-icon">&#11043;</div>
+              <div style="font-size:0.85em;">Hex overworld map — click to paint terrain</div>
+              <div style="font-size:0.75em;">GM sees all · players see only revealed hexes</div>
+            </div>
+          </div>
+        </div>
+        <!-- Collapsible roll history side panel -->
+        <div class="ow-side-panel" id="ow-side-panel">
+          <div class="ow-side-head">
+            <span style="font-weight:600;font-size:0.85em;">&#9861; Roll History</span>
+            <button onclick="toggleOwPanel()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:1.1em;">&#215;</button>
+          </div>
+          <div class="ow-side-body">
+            <div class="sec-label">Initiative</div>
+            <div class="card" id="ow-initiative" style="margin-bottom:10px;max-height:180px;overflow-y:auto;">
+              <div class="c-row" style="color:var(--text3);font-size:0.78em;">No initiative set</div>
+            </div>
+            <div class="sec-label">Roll feed <span style="font-size:0.85em;font-weight:400;color:var(--text3);">— GM sees all</span></div>
+            <div class="card" style="flex:1;overflow-y:auto;">
+              <div id="ow-feed-list"><div class="feed-empty">No rolls yet</div></div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /overworld -->
+
+      <!-- ── PARTY TAB (compact table with expandable PF2e sheets) ── -->
       <div class="tab-page" id="tab-party">
         <div class="party-layout">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <h2 style="font-size:0.88em;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.08em;">Party overview</h2>
-            <button class="btn amber" onclick="addPartyMember()">+ Add member</button>
+          <div class="party-toolbar">
+            <h2 style="font-size:0.88em;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.08em;">Party</h2>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <span style="font-size:0.78em;color:var(--text3);" id="party-sync-status"></span>
+              <button class="btn amber" onclick="addPartyMember()">+ Add member</button>
+            </div>
           </div>
-          <div class="party-grid" id="party-grid"></div>
+          <div class="party-table-wrap">
+            <table class="party-table">
+              <thead>
+                <tr>
+                  <th style="width:24px;"></th>
+                  <th>Name</th>
+                  <th>Class</th>
+                  <th>HP</th>
+                  <th>AC</th>
+                  <th>Lvl</th>
+                  <th>&#128994;</th>
+                  <th style="width:60px;"></th>
+                </tr>
+              </thead>
+              <tbody id="party-tbody"></tbody>
+            </table>
+          </div>
         </div>
       </div><!-- /party -->
 
@@ -913,11 +1054,11 @@ const terrainColors = { desert:'#9FE1CB', water:'#B5D4F4', scrub:'#C0DD97', rock
 // Battle map state
 const bMap = { gridSize: 50, tool: 'select', tokens: [], fogCells: new Set() };
 
-// Right panel config per tab
+// Right panel config per tab — dice/overworld now self-contained, no right panel needed
 const rpConfig = {
   audio:     { tabs: ['Dice', 'Party', 'Notes'],    default: 'Dice' },
-  dice:      { tabs: ['Party', 'Notes'],             default: 'Party' },
-  overworld: { tabs: ['Map tools', 'Locations', 'Party'], default: 'Map tools' },
+  battle:    { tabs: ['Notes'],                      default: 'Notes' },
+  overworld: { tabs: ['Notes'],                      default: 'Notes' },
   battle:    { tabs: ['Tokens', 'Initiative', 'Party'],   default: 'Tokens' },
   party:     { tabs: ['Dice feed', 'Notes'],         default: 'Dice feed' },
 };
@@ -974,9 +1115,28 @@ function switchTab(name) {
   document.querySelectorAll('.tab-page').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
   buildRightPanel(name);
   if (name === 'overworld') initOverworld();
-  if (name === 'battle')    initBattle();
+  if (name === 'battle')    { initBattle(); initGmDiceTab(); }
   if (name === 'party')     renderParty();
-  if (name === 'dice')      initGmDiceTab();
+}
+
+// ── Dice overlay (battle tab) ──────────────────────────────────────────────
+let diceOverlayOpen = false;
+function toggleDiceOverlay() {
+  diceOverlayOpen = !diceOverlayOpen;
+  document.getElementById('dice-overlay').classList.toggle('open', diceOverlayOpen);
+  document.getElementById('dice-fab').classList.toggle('open', diceOverlayOpen);
+  if (diceOverlayOpen) {
+    initGmDiceTab();
+    renderGmFeedInEl('gm-feed-list');
+  }
+}
+
+// ── Overworld side panel ───────────────────────────────────────────────────
+let owPanelOpen = false;
+function toggleOwPanel() {
+  owPanelOpen = !owPanelOpen;
+  document.getElementById('ow-side-panel').classList.toggle('open', owPanelOpen);
+  if (owPanelOpen) renderGmFeedInEl('ow-feed-list');
 }
 
 // ============================================================================
@@ -1480,7 +1640,35 @@ async function gmRoll() {
   document.getElementById('gm-total').textContent = '\u2026';
 }
 
-function renderGmFeed() { renderRPDiceFeed(); }
+function renderGmFeed() {
+  renderRPDiceFeed();
+  renderGmFeedInEl('gm-feed-list');
+  renderGmFeedInEl('ow-feed-list');
+}
+
+function renderGmFeedInEl(elId) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  if (!gmDice.feed.length) { el.innerHTML = '<div class="feed-empty">No rolls yet</div>'; return; }
+  el.innerHTML = gmDice.feed.slice(0,40).map(r => {
+    const dos = r.degreeOfSuccess || '';
+    const dosC = dos ? dosClass(dos) : '';
+    const pill = r.isNat20 ? '<span class="nat-pill nat20" style="font-size:0.65em;padding:1px 5px;">nat 20</span>'
+                : r.isNat1  ? '<span class="nat-pill nat1"  style="font-size:0.65em;padding:1px 5px;">nat 1</span>' : '';
+    return `<div class="feed-row">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <span class="feed-roller">${r.roller}</span>
+        ${r.label ? `<span style="font-size:0.78em;color:var(--text3);">${r.label}</span>` : ''}
+        ${pill}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:2px;">
+        <span class="feed-total">${r.redacted ? '???' : r.total}</span>
+        ${dos ? `<span class="feed-dos ${dosC}">${dos}</span>` : ''}
+        ${r.dc ? `<span style="font-size:0.72em;color:var(--text3);">DC ${r.dc}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
 
 socket.on('dice:result', (r) => {
   if (r.roller !== 'GM' && r.role !== 'dm') return;
@@ -1780,45 +1968,109 @@ function clearBattle() { if (confirm('Clear all tokens and fog?')) { bMap.tokens
 // ============================================================================
 function saveParty() { localStorage.setItem('gm_party', JSON.stringify(party)); }
 
+// ============================================================================
+// Party — PF2e compact table with expandable sheets
+// Data submitted by players via socket, stored in server room state
+// ============================================================================
+
+// Default party template (GM-seeded; players will override via socket)
+if (!party.length) party = [
+  { id:1, name:'Arl',     cls:'Monk',     level:8, hp:98,  maxHp:98,  ac:24, speed:35, str:18,dex:16,con:14,int:12,wis:16,cha:10, saves:{fort:'E',ref:'E',will:'M'}, skills:{}, conditions:[], color:'#EEEDFE', textColor:'#3C3489', online:false },
+  { id:2, name:'Johanna', cls:'Chronicler',level:8,hp:88,  maxHp:88,  ac:21, speed:30, str:10,dex:14,con:12,int:18,wis:14,cha:16, saves:{fort:'T',ref:'T',will:'E'}, skills:{}, conditions:[], color:'#E1F5EE', textColor:'#085041', online:false },
+  { id:3, name:'Thrain',  cls:'Fighter',  level:8, hp:110, maxHp:110, ac:22, speed:25, str:20,dex:12,con:16,int:10,wis:10,cha:8,  saves:{fort:'E',ref:'T',will:'T'}, skills:{}, conditions:[], color:'#FAEEDA', textColor:'#633806', online:false },
+];
+
+const expandedRows = new Set();
+
+function abilityMod(score) {
+  const m = Math.floor((score - 10) / 2);
+  return (m >= 0 ? '+' : '') + m;
+}
+
 function renderParty() {
-  if (currentTab !== 'party') return;
-  const grid = document.getElementById('party-grid');
-  if (!grid) return;
-  grid.innerHTML = party.map(pc => {
+  const tbody = document.getElementById('party-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  party.forEach(pc => {
     const pct = Math.max(0, Math.min(100, (pc.hp / pc.maxHp) * 100));
     const barClass = pct > 50 ? '' : pct > 25 ? ' low' : ' crit';
-    return `
-    <div class="party-card">
-      <div class="party-card-head">
-        <div class="party-avatar" style="background:${pc.color};color:${pc.textColor};">${pc.name[0]}</div>
-        <div class="party-name-block">
-          <div class="party-name">${pc.name}</div>
-          <div class="party-class">${pc.cls}</div>
+    const isExpanded = expandedRows.has(pc.id);
+
+    // Main row
+    const tr = document.createElement('tr');
+    tr.className = isExpanded ? 'expanded' : '';
+    tr.innerHTML = `
+      <td><span class="pt-online-dot ${pc.online ? 'on' : ''}" title="${pc.online ? 'Online' : 'Offline'}"></span></td>
+      <td><div class="pt-name">
+        <div class="pt-avatar" style="background:${pc.color};color:${pc.textColor};">${pc.name[0]}</div>
+        ${pc.name}
+        ${pc.conditions.length ? `<span style="font-size:0.7em;color:var(--amber);">${pc.conditions.join(', ')}</span>` : ''}
+      </div></td>
+      <td style="color:var(--text2);">${pc.cls}</td>
+      <td>
+        <div class="pt-hp-bar"><div class="pt-hp-fill${barClass}" style="width:${pct}%;"></div></div>
+        <span class="pt-hp-nums">${pc.hp}/${pc.maxHp}</span>
+      </td>
+      <td style="font-weight:600;">${pc.ac}</td>
+      <td style="color:var(--text2);">${pc.level}</td>
+      <td><span class="pt-online-dot ${pc.online ? 'on' : ''}" style="display:none;"></span></td>
+      <td>
+        <button class="pt-expand-btn" onclick="togglePartyRow(${pc.id})">${isExpanded ? '▲ Hide' : '▼ Sheet'}</button>
+      </td>`;
+    tr.onclick = (e) => { if (!e.target.closest('button')) togglePartyRow(pc.id); };
+    tbody.appendChild(tr);
+
+    // Expanded detail row
+    if (isExpanded) {
+      const dr = document.createElement('tr');
+      dr.className = 'party-detail-row';
+      const saves = pc.saves || {};
+      const profLabel = {'T':'Trained','E':'Expert','M':'Master','L':'Legendary'};
+      dr.innerHTML = `<td colspan="8" class="party-detail-cell">
+        <div class="pd-grid">
+          ${['str','dex','con','int','wis','cha'].map(s => `
+            <div class="pd-stat">
+              <div class="pd-stat-label">${s.toUpperCase()}</div>
+              <div class="pd-stat-val">${pc[s] ?? '—'}</div>
+              <div class="pd-stat-mod">${pc[s] ? abilityMod(pc[s]) : ''}</div>
+            </div>`).join('')}
         </div>
-        <div class="party-online${pc.online?' on':''}" title="${pc.online?'Online':'Offline'}"></div>
-      </div>
-      <div class="party-stats">
-        <div class="party-stat"><div class="party-stat-label">AC</div><div class="party-stat-val">${pc.ac}</div></div>
-        <div class="party-stat"><div class="party-stat-label">Speed</div><div class="party-stat-val">${pc.speed}</div></div>
-        <div class="party-stat"><div class="party-stat-label">Level</div><div class="party-stat-val">${pc.cls.match(/\d+/)?.[0]||'?'}</div></div>
-      </div>
-      <div class="party-hp-row">
-        <span class="party-hp-label">HP</span>
-        <div class="party-hp-bar"><div class="party-hp-fill${barClass}" style="width:${pct}%;"></div></div>
-        <span class="party-hp-nums">${pc.hp}/${pc.maxHp}</span>
-      </div>
-      <div class="party-conditions" id="cond-${pc.id}">
-        ${pc.conditions.map(c=>`<span class="condition-tag">${c}<span class="remove-c" onclick="removeCondition(${pc.id},'${c}')">&#215;</span></span>`).join('')}
-        <button class="add-condition-btn" onclick="addCondition(${pc.id})">+ condition</button>
-      </div>
-      <div class="party-quick-hp">
-        <button class="hp-adj-btn" onclick="adjustHp(${pc.id},-1)">&#8722;</button>
-        <input class="hp-adj-input" id="hp-adj-${pc.id}" type="number" placeholder="amt" min="1">
-        <button class="hp-adj-btn" onclick="adjustHp(${pc.id},1)">+</button>
-        <span class="hp-adj-label">quick adjust</span>
-        <button class="btn danger" style="padding:3px 8px;font-size:0.72em;" onclick="removePartyMember(${pc.id})">Remove</button>
-      </div>
-    </div>`; }).join('');
+        <div class="pd-row">
+          <div class="pd-field"><label>Speed</label><span>${pc.speed ?? '—'} ft</span></div>
+          <div class="pd-field"><label>Perception</label><span>${pc.perception ?? '—'}</span></div>
+          <div class="pd-field"><label>Fort</label><span>${saves.fort ? profLabel[saves.fort]+' ('+saves.fort+')' : '—'}</span></div>
+          <div class="pd-field"><label>Ref</label><span>${saves.ref  ? profLabel[saves.ref] +' ('+saves.ref +')'  : '—'}</span></div>
+          <div class="pd-field"><label>Will</label><span>${saves.will ? profLabel[saves.will]+' ('+saves.will+')' : '—'}</span></div>
+        </div>
+        ${pc.skills && Object.keys(pc.skills).length ? `
+        <div class="pd-profs">
+          ${Object.entries(pc.skills).map(([k,v]) => `<span class="pd-prof-badge ${v}">${k} (${v})</span>`).join('')}
+        </div>` : ''}
+        ${pc.conditions.length ? `
+        <div class="pd-conditions" style="margin-bottom:8px;">
+          ${pc.conditions.map(c=>`<span class="condition-tag">${c}<span class="remove-c" onclick="removeCondition(${pc.id},'${c}')">&#215;</span></span>`).join('')}
+          <button class="add-condition-btn" onclick="addCondition(${pc.id})">+ condition</button>
+        </div>` : `<button class="add-condition-btn" onclick="addCondition(${pc.id})" style="margin-bottom:8px;">+ condition</button>`}
+        <div class="pd-actions">
+          <div class="hp-quick">
+            <button class="hp-adj-btn" onclick="adjustHp(${pc.id},-1)">&#8722;</button>
+            <input class="hp-adj-input num-input" id="hp-adj-${pc.id}" type="number" placeholder="amt" min="1" style="width:52px;">
+            <button class="hp-adj-btn" onclick="adjustHp(${pc.id},1)">+</button>
+            <span style="font-size:0.75em;color:var(--text3);">adjust HP</span>
+          </div>
+          <button class="btn danger" style="padding:3px 8px;font-size:0.72em;margin-left:auto;" onclick="removePartyMember(${pc.id})">Remove</button>
+        </div>
+      </td>`;
+      tbody.appendChild(dr);
+    }
+  });
+}
+
+function togglePartyRow(id) {
+  if (expandedRows.has(id)) expandedRows.delete(id);
+  else expandedRows.add(id);
+  renderParty();
 }
 
 function updateHp(id, val) {
@@ -1839,7 +2091,7 @@ function addCondition(id) {
   const c = prompt('Condition name (e.g. Stunned, Frightened):');
   if (!c) return;
   const pc = party.find(p=>p.id===id);
-  if (pc) { pc.conditions.push(c); saveParty(); renderParty(); }
+  if (pc) { pc.conditions.push(c.trim()); saveParty(); renderParty(); }
 }
 function removeCondition(id, c) {
   const pc = party.find(p=>p.id===id);
@@ -1847,24 +2099,44 @@ function removeCondition(id, c) {
 }
 function addPartyMember() {
   const name = prompt('Character name:'); if (!name) return;
-  const cls  = prompt('Class & level (e.g. Fighter 8):') || '';
+  const cls  = prompt('Class (e.g. Fighter):') || '';
+  const level = Number(prompt('Level:')) || 1;
   const hp   = Number(prompt('Max HP:')) || 10;
   const ac   = Number(prompt('AC:')) || 10;
   const id   = Date.now();
   const colors = ['#EEEDFE','#E1F5EE','#FAEEDA','#E6F1FB','#FBEAF0'];
   const tcolors= ['#3C3489','#085041','#633806','#0C447C','#72243E'];
   const idx = party.length % colors.length;
-  party.push({ id, name, cls, hp, maxHp:hp, ac, speed:25, conditions:[], color:colors[idx], textColor:tcolors[idx], online:false });
+  party.push({ id, name, cls, level, hp, maxHp:hp, ac, speed:25,
+    str:10,dex:10,con:10,int:10,wis:10,cha:10,
+    saves:{fort:'T',ref:'T',will:'T'}, skills:{}, conditions:[],
+    color:colors[idx], textColor:tcolors[idx], online:false });
   saveParty(); renderParty(); renderRPParty();
 }
 function removePartyMember(id) {
   if (!confirm('Remove this party member?')) return;
+  expandedRows.delete(id);
   party = party.filter(p=>p.id!==id); saveParty(); renderParty();
 }
 
-// ============================================================================
-// Notes
-// ============================================================================
+// Players can push their sheet data via socket
+socket.on('party:sheet:update', (data) => {
+  // data: { name, cls, level, hp, maxHp, ac, speed, str,dex,con,int,wis,cha, saves, skills, perception }
+  let pc = party.find(p => p.name.toLowerCase() === data.name.toLowerCase());
+  if (!pc) {
+    // Auto-add if not in party
+    const colors = ['#EEEDFE','#E1F5EE','#FAEEDA','#E6F1FB','#FBEAF0'];
+    const tcolors= ['#3C3489','#085041','#633806','#0C447C','#72243E'];
+    const idx = party.length % colors.length;
+    pc = { id: Date.now(), conditions:[], online:true, color:colors[idx], textColor:tcolors[idx] };
+    party.push(pc);
+  }
+  Object.assign(pc, data, { online: true });
+  saveParty(); renderParty(); renderRPParty();
+  const status = document.getElementById('party-sync-status');
+  if (status) { status.textContent = `${data.name} updated sheet`; setTimeout(()=>{ status.textContent=''; }, 3000); }
+});
+
 function saveNotes() {
   const v = document.getElementById('gm-notes')?.value || '';
   localStorage.setItem('gm_notes', v);
